@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("admin")
+  createdAt DateTime @default(now())
+}
+
+model Vehicle {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  vin             String   @unique
+  stockNumber     String   @unique
+
+  // Identification
+  year            Int
+  make            String
+  model           String
+  trim            String?
+  bodyStyle       String
+  condition       String   // new | used | certified
+
+  // Powertrain
+  engine          String?
+  transmission    String?
+  drivetrain      String?  // FWD, RWD, AWD, 4WD
+  fuelType        String?
+  cityMpg         Int?
+  highwayMpg      Int?
+
+  // Exterior / interior
+  exteriorColor   String?
+  interiorColor   String?
+  doors           Int?
+  seats           Int?
+
+  // State
+  mileage         Int
+  price           Int       // cents
+  msrp            Int?      // cents
+  status          String    @default("available") // available | pending | sold | hidden
+
+  // Marketing
+  headline        String?
+  description     String?
+  featured        Boolean   @default(false)
+
+  // Features (comma separated, simple for SQLite)
+  features        String?   // "Apple CarPlay,Heated Seats,..."
+
+  // CarFax / history
+  accidentFree    Boolean   @default(true)
+  oneOwner        Boolean   @default(false)
+  serviceRecords  Boolean   @default(false)
+  carfaxUrl       String?
+
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  soldAt          DateTime?
+
+  // Relations
+  photos          Photo[]
+  leads           Lead[]
+  syndications    SyndicationItem[]
+
+  @@index([status, createdAt])
+  @@index([make, model, year])
+}
+
+model Photo {
+  id         String   @id @default(cuid())
+  vehicleId  String
+  url        String
+  alt        String?
+  position   Int      @default(0)
+  isHero     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  vehicle    Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId, position])
+}
+
+model Lead {
+  id           String   @id @default(cuid())
+  type         String   // contact | financing | trade_in | sell | test_drive
+  status       String   @default("new") // new | contacted | qualified | closed | lost
+  vehicleId    String?
+
+  firstName    String
+  lastName     String
+  email        String
+  phone        String?
+
+  // Generic message field
+  message      String?
+
+  // Financing fields (encoded JSON for simplicity)
+  payload      String?  // JSON string
+
+  source       String?  // e.g. "vehicle_detail" | "homepage" | "ai_chat"
+  ipAddress    String?
+  userAgent    String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  vehicle      Vehicle? @relation(fields: [vehicleId], references: [id])
+
+  @@index([type, status, createdAt])
+}
+
+model SyndicationRun {
+  id            String   @id @default(cuid())
+  channel       String   // autotrader | cargurus | generic
+  startedAt     DateTime @default(now())
+  finishedAt    DateTime?
+  status        String   @default("running") // running | success | failed
+  vehicleCount  Int      @default(0)
+  filePath      String?
+  errorMessage  String?
+
+  items         SyndicationItem[]
+}
+
+model SyndicationItem {
+  id        String   @id @default(cuid())
+  runId     String
+  vehicleId String
+  action    String   // upsert | remove
+  ok        Boolean  @default(true)
+  reason    String?
+
+  run       SyndicationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  vehicle   Vehicle        @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([runId])
+  @@index([vehicleId])
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

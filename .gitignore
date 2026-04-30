@@ -1,0 +1,15 @@
+node_modules
+.next
+out
+.env
+.env.local
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+public/uploads/*
+!public/uploads/.gitkeep
+feeds-output/*
+!feeds-output/.gitkeep
+.DS_Store
+*.log
