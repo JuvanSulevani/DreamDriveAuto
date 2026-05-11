@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { authOptions } from '@/lib/auth';
+import {
+  MAX_UPLOAD_BYTES,
+  createUploadKey,
+  getPublicUploadUrl,
+  getS3UploadConfig,
+  isAllowedUploadType,
+  localUploadsEnabled
+} from '@/lib/uploads';
 
 export const runtime = 'nodejs';
-
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
-const MAX_BYTES = 15 * 1024 * 1024; // 15MB
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -20,20 +26,37 @@ export async function POST(req: NextRequest) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: 'no_file' }, { status: 400 });
   }
-  if (!ALLOWED_TYPES.includes(file.type)) {
+  if (!isAllowedUploadType(file.type)) {
     return NextResponse.json({ error: 'bad_type' }, { status: 415 });
   }
-  if (file.size > MAX_BYTES) {
+  if (file.size > MAX_UPLOAD_BYTES) {
     return NextResponse.json({ error: 'too_large' }, { status: 413 });
   }
 
-  const ext = path.extname(file.name) || '.jpg';
-  const name = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`;
-  const dir = path.join(process.cwd(), 'public', 'uploads');
-  await mkdir(dir, { recursive: true });
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(dir, name), buffer);
-  const url = `/uploads/${name}`;
+  const key = createUploadKey(file.type);
+  const s3Config = getS3UploadConfig();
 
-  return NextResponse.json({ url });
+  if (s3Config) {
+    const client = new S3Client({ region: s3Config.region });
+    await client.send(new PutObjectCommand({
+      Bucket: s3Config.bucket,
+      Key: key,
+      Body: buffer,
+      ContentType: file.type,
+      CacheControl: 'public, max-age=31536000, immutable'
+    }));
+
+    return NextResponse.json({ url: getPublicUploadUrl(s3Config, key) });
+  }
+
+  if (!localUploadsEnabled()) {
+    return NextResponse.json({ error: 'upload_storage_not_configured' }, { status: 500 });
+  }
+
+  const filePath = path.join(process.cwd(), 'public', key);
+  await mkdir(path.dirname(filePath), { recursive: true });
+  await writeFile(filePath, buffer);
+
+  return NextResponse.json({ url: `/${key}` });
 }

@@ -27,7 +27,7 @@ Built with Next.js 14 (App Router), TypeScript, Prisma, and Tailwind. Single cod
 - Settings overview pulling from environment.
 
 ### Backend
-- Prisma + SQLite (zero-config dev). Swap `DATABASE_URL` to Postgres for prod with no code change.
+- Prisma + PostgreSQL for durable production data.
 - REST endpoints for vehicles, leads, uploads, settings, syndication, feeds.
 - Lead notifications via SMTP (nodemailer).
 - Local image upload with type/size validation.
@@ -64,10 +64,10 @@ npm install
 
 # 2. Configure environment
 cp .env.example .env
-# edit .env — at minimum set NEXTAUTH_SECRET and ADMIN_PASSWORD
+# edit .env — at minimum set DATABASE_URL, NEXTAUTH_SECRET, and ADMIN_PASSWORD
 
 # 3. Initialize database
-npm run db:push      # creates dev.db
+npm run db:migrate   # creates tables from prisma/migrations
 npm run db:seed      # seeds admin user + sample vehicles
 
 # 4. Run dev server
@@ -179,23 +179,36 @@ DreamDriveAuto/
 ## Production deployment
 
 ### Database
-Switch from SQLite to Postgres for production:
+Use PostgreSQL for production:
 
 ```env
 DATABASE_URL="postgresql://user:pass@host:5432/dreamdrive"
 ```
 
-Update `prisma/schema.prisma` `provider = "postgresql"`, then `npm run db:push`.
+Run `npm run db:migrate` after the production `DATABASE_URL` is configured. Run
+`npm run db:seed` once to create the first admin user and sample records, then
+change the admin password.
 
 ### Image storage
-The current upload route writes to `public/uploads`. For production scale, swap
-the storage backend in `src/app/api/upload/route.ts` to S3 / Cloudflare R2 /
-CloudFront. The `Photo.url` column already accepts absolute URLs.
+The upload route writes to S3 when `UPLOADS_S3_BUCKET` is set. Configure:
+
+```env
+UPLOADS_S3_BUCKET="your-bucket"
+UPLOADS_S3_REGION="us-east-1"
+UPLOADS_S3_PREFIX="uploads"
+UPLOADS_PUBLIC_BASE_URL="https://your-public-bucket-or-cloudfront-domain"
+```
+
+Local development still falls back to `public/uploads` when S3 is not configured.
 
 ### Hosting
-- **Web**: Vercel, Fly.io, Render, Railway, or any Node host.
+- **Web**: AWS Amplify Hosting, Vercel, Fly.io, Render, Railway, or any Node host.
 - **Worker**: Same infra; long-running process. Or run as a separate service with a 
   dedicated container, supervised by PM2/systemd.
+
+For Amplify Hosting, `amplify.yml` copies the required server-side environment
+variables into `.env.production`, runs `npm run db:migrate` when `DATABASE_URL`
+is set, and then runs the Next.js production build.
 
 ### Email
 Set `SMTP_*` vars to a transactional provider (Postmark, SendGrid, Resend, SES).

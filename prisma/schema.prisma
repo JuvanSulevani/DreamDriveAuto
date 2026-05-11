@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -55,7 +55,7 @@ model Vehicle {
   description     String?
   featured        Boolean   @default(false)
 
-  // Features (comma separated, simple for SQLite)
+  // Features (comma separated for a simple admin editing flow)
   features        String?   // "Apple CarPlay,Heated Seats,..."
 
   // CarFax / history
