@@ -185,9 +185,22 @@ Use PostgreSQL for production:
 DATABASE_URL="postgresql://user:pass@host:5432/dreamdrive"
 ```
 
-Run `npm run db:migrate` after the production `DATABASE_URL` is configured. Run
-`npm run db:admin` once with `ADMIN_EMAIL` and `ADMIN_PASSWORD` set to create
-the first admin user without loading sample inventory.
+For AWS databases that require IAM-only authentication, do not set a static
+`DATABASE_URL`. Configure these values instead:
+
+```env
+DATABASE_AUTH_MODE="iam"
+RDS_HOST="your-cluster-endpoint"
+RDS_PORT="5432"
+RDS_DATABASE="postgres"
+RDS_USER="dreamdriveadmin"
+RDS_REGION="us-east-2"
+```
+
+Run `npm run db:migrate` after the production database environment variables
+are configured. Run `npm run db:admin` once with `ADMIN_EMAIL` and
+`ADMIN_PASSWORD` set to create the first admin user without loading sample
+inventory.
 
 ### Image storage
 The upload route writes to S3 when `UPLOADS_S3_BUCKET` is set. Configure:
