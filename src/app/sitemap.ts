@@ -4,10 +4,6 @@ import { DEALER } from '@/lib/dealer';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = DEALER.website.replace(/\/$/, '');
-  const vehicles = await prisma.vehicle.findMany({
-    where: { status: 'available' },
-    select: { slug: true, updatedAt: true }
-  });
 
   const staticPages: MetadataRoute.Sitemap = [
     '', '/inventory', '/financing', '/trade-in', '/sell', '/about', '/contact', '/service'
@@ -18,6 +14,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: p === '' ? 1.0 : 0.8
   }));
 
+  const vehicles = await getSitemapVehicles();
+
   return [
     ...staticPages,
     ...vehicles.map((v) => ({
@@ -27,4 +25,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9
     }))
   ];
+}
+
+async function getSitemapVehicles() {
+  if (!process.env.DATABASE_URL) return [];
+
+  try {
+    return await prisma.vehicle.findMany({
+      where: { status: 'available' },
+      select: { slug: true, updatedAt: true }
+    });
+  } catch (error) {
+    console.warn('[sitemap] Skipping vehicle URLs because the database is unavailable during sitemap generation.', error);
+    return [];
+  }
 }
