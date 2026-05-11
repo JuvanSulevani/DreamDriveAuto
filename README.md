@@ -68,7 +68,7 @@ cp .env.example .env
 
 # 3. Initialize database
 npm run db:migrate   # creates tables from prisma/migrations
-npm run db:seed      # seeds admin user + sample vehicles
+npm run db:seed      # local/demo only: seeds admin user + sample vehicles
 
 # 4. Run dev server
 npm run dev          # http://localhost:3000
@@ -186,8 +186,8 @@ DATABASE_URL="postgresql://user:pass@host:5432/dreamdrive"
 ```
 
 Run `npm run db:migrate` after the production `DATABASE_URL` is configured. Run
-`npm run db:seed` once to create the first admin user and sample records, then
-change the admin password.
+`npm run db:admin` once with `ADMIN_EMAIL` and `ADMIN_PASSWORD` set to create
+the first admin user without loading sample inventory.
 
 ### Image storage
 The upload route writes to S3 when `UPLOADS_S3_BUCKET` is set. Configure:

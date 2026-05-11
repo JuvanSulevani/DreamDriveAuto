@@ -10,6 +10,7 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
+    "db:admin": "tsx prisma/bootstrap-admin.ts",
     "db:studio": "prisma studio",
     "syndicate": "tsx scripts/syndicate.ts",
     "syndicate:watch": "tsx scripts/syndication-worker.ts",
