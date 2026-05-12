@@ -21,7 +21,11 @@ export async function resolveDatabaseUrl(env: NodeJS.ProcessEnv = process.env) {
   });
 
   const token = await signer.getAuthToken();
-  const params = new URLSearchParams({ schema: 'public', sslmode: 'require' });
+  const params = new URLSearchParams({
+    schema: 'public',
+    sslmode: 'require',
+    connect_timeout: env.DATABASE_CONNECT_TIMEOUT || '30'
+  });
 
   return `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(token)}@${host}:${port}/${database}?${params}`;
 }
