@@ -9,12 +9,14 @@ import VehicleCard from '@/components/VehicleCard';
 import { prisma } from '@/lib/prisma';
 import { formatPrice, formatMiles, conditionLabel } from '@/lib/format';
 import { DEALER } from '@/lib/dealer';
+import { getSiteSettings } from '@/lib/site-settings-store';
 import { Phone, MapPin, ShieldCheck, FileText, ChevronLeft } from 'lucide-react';
 
 export const revalidate = 60;
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const v = await prisma.vehicle.findUnique({ where: { slug: params.slug } });
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const v = await prisma.vehicle.findUnique({ where: { slug } });
   if (!v) return { title: 'Vehicle not found' };
   return {
     title: `${v.year} ${v.make} ${v.model}${v.trim ? ' ' + v.trim : ''}`,
@@ -22,9 +24,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function VehiclePage({ params }: { params: { slug: string } }) {
+export default async function VehiclePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const { dealer } = await getSiteSettings();
   const v = await prisma.vehicle.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
     include: { photos: { orderBy: { position: 'asc' } } }
   });
 
@@ -197,6 +201,7 @@ export default async function VehiclePage({ params }: { params: { slug: string }
                   source="vehicle_detail"
                   defaultMessage={`I'd like more information on the ${v.year} ${v.make} ${v.model} (Stock ${v.stockNumber}).`}
                   cta="Send Inquiry"
+                  dealerName={dealer.name}
                 />
               </div>
             </section>
@@ -208,13 +213,13 @@ export default async function VehiclePage({ params }: { params: { slug: string }
 
             <div className="border hairline p-6">
               <div className="eyebrow mb-5">Showroom</div>
-              <a href={`tel:${DEALER.phone.replace(/[^0-9+]/g, '')}`} className="flex items-center gap-3 group mb-3">
+              <a href={`tel:${dealer.phone.replace(/[^0-9+]/g, '')}`} className="flex items-center gap-3 group mb-3">
                 <Phone size={14} className="text-copper" />
-                <span className="text-cream group-hover:text-copper transition-colors">{DEALER.phone}</span>
+                <span className="text-cream group-hover:text-copper transition-colors">{dealer.phone}</span>
               </a>
               <div className="flex items-start gap-3 text-cream text-sm">
                 <MapPin size={14} className="text-copper mt-1 shrink-0" />
-                {DEALER.address}
+                {dealer.address}
               </div>
               <Link href="/contact" className="btn-ghost w-full justify-center mt-6">
                 Book a Test Drive

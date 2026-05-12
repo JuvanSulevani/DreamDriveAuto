@@ -21,7 +21,7 @@ export function isAllowedUploadType(type: string) {
 
 export function createUploadKey(type: string, now = Date.now()) {
   const extension = IMAGE_EXTENSIONS_BY_TYPE[type] ?? 'jpg';
-  const prefix = normalizePrefix(process.env.UPLOADS_S3_PREFIX || 'uploads');
+  const prefix = getUploadPrefix();
   return `${prefix}${now}-${randomUUID()}.${extension}`;
 }
 
@@ -38,7 +38,7 @@ export function getS3UploadConfig(env: NodeJS.ProcessEnv = process.env): S3Uploa
 
 export function getPublicUploadUrl(config: S3UploadConfig, key: string) {
   if (config.publicBaseUrl) return `${config.publicBaseUrl}/${key}`;
-  return `https://${config.bucket}.s3.${config.region}.amazonaws.com/${key}`;
+  return `/api/uploads/${key.split('/').map(encodeURIComponent).join('/')}`;
 }
 
 export function localUploadsEnabled(env: NodeJS.ProcessEnv = process.env) {
@@ -48,4 +48,8 @@ export function localUploadsEnabled(env: NodeJS.ProcessEnv = process.env) {
 function normalizePrefix(prefix: string) {
   const trimmed = prefix.replace(/^\/+|\/+$/g, '');
   return trimmed ? `${trimmed}/` : '';
+}
+
+export function getUploadPrefix(env: NodeJS.ProcessEnv = process.env) {
+  return normalizePrefix(env.UPLOADS_S3_PREFIX || 'uploads');
 }

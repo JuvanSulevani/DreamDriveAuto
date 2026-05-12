@@ -7,11 +7,12 @@ import { ensureAdmin } from '@/lib/require-admin';
 
 export const dynamic = 'force-dynamic';
 
-export default async function EditVehiclePage({ params }: { params: { id: string } }) {
+export default async function EditVehiclePage({ params }: { params: Promise<{ id: string }> }) {
   await ensureAdmin();
+  const { id } = await params;
 
   const v = await prisma.vehicle.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: { photos: { orderBy: { position: 'asc' } } }
   });
   if (!v) notFound();

@@ -6,17 +6,18 @@ import { Plus } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminInventoryPage({ searchParams }: { searchParams: { status?: string; q?: string } }) {
+export default async function AdminInventoryPage({ searchParams }: { searchParams: Promise<{ status?: string; q?: string }> }) {
   await ensureAdmin();
+  const params = await searchParams;
 
   const where: Record<string, unknown> = {};
-  if (searchParams.status && searchParams.status !== 'all') where.status = searchParams.status;
-  if (searchParams.q) {
+  if (params.status && params.status !== 'all') where.status = params.status;
+  if (params.q) {
     where.OR = [
-      { make: { contains: searchParams.q } },
-      { model: { contains: searchParams.q } },
-      { vin: { contains: searchParams.q } },
-      { stockNumber: { contains: searchParams.q } }
+      { make: { contains: params.q } },
+      { model: { contains: params.q } },
+      { vin: { contains: params.q } },
+      { stockNumber: { contains: params.q } }
     ];
   }
 
@@ -46,11 +47,11 @@ export default async function AdminInventoryPage({ searchParams }: { searchParam
       </div>
 
       <div className="flex gap-2 mb-6 flex-wrap">
-        <Pill href="/admin/inventory" active={!searchParams.status || searchParams.status === 'all'} label={`All (${total})`} />
-        <Pill href="/admin/inventory?status=available" active={searchParams.status === 'available'} label={`Available (${countByStatus.available ?? 0})`} />
-        <Pill href="/admin/inventory?status=pending" active={searchParams.status === 'pending'} label={`Pending (${countByStatus.pending ?? 0})`} />
-        <Pill href="/admin/inventory?status=sold" active={searchParams.status === 'sold'} label={`Sold (${countByStatus.sold ?? 0})`} />
-        <Pill href="/admin/inventory?status=hidden" active={searchParams.status === 'hidden'} label={`Hidden (${countByStatus.hidden ?? 0})`} />
+        <Pill href="/admin/inventory" active={!params.status || params.status === 'all'} label={`All (${total})`} />
+        <Pill href="/admin/inventory?status=available" active={params.status === 'available'} label={`Available (${countByStatus.available ?? 0})`} />
+        <Pill href="/admin/inventory?status=pending" active={params.status === 'pending'} label={`Pending (${countByStatus.pending ?? 0})`} />
+        <Pill href="/admin/inventory?status=sold" active={params.status === 'sold'} label={`Sold (${countByStatus.sold ?? 0})`} />
+        <Pill href="/admin/inventory?status=hidden" active={params.status === 'hidden'} label={`Hidden (${countByStatus.hidden ?? 0})`} />
       </div>
 
       <div className="border hairline">

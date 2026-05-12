@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
+    "test": "tsx --test",
     "db:push": "tsx scripts/with-database-url.ts prisma db push",
     "db:migrate": "tsx scripts/with-database-url.ts prisma migrate deploy",
     "db:seed": "tsx scripts/with-database-url.ts tsx prisma/seed.ts",
@@ -14,25 +15,24 @@
     "db:studio": "prisma studio",
     "syndicate": "tsx scripts/syndicate.ts",
     "syndicate:watch": "tsx scripts/syndication-worker.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate --no-hints"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1045.0",
-    "@aws-sdk/rds-signer": "^3.1045.0",
     "@aws-sdk/rds-signer": "^3.1045.0",
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^2.4.3",
     "csv-stringify": "^6.5.2",
     "framer-motion": "^11.11.17",
     "lucide-react": "^0.460.0",
-    "next": "14.2.35",
+    "next": "15.5.18",
     "next-auth": "^4.24.10",
-    "node-cron": "^3.0.3",
-    "nodemailer": "^7.0.0",
+    "nodemailer8": "npm:nodemailer@8.0.7",
+    "node-cron": "4.2.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "ssh2-sftp-client": "^11.0.0",
-    "xmlbuilder2": "^3.1.1",
+    "xmlbuilder2": "4.0.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -44,12 +44,18 @@
     "@types/react-dom": "^18.3.1",
     "@types/ssh2-sftp-client": "^9.0.4",
     "autoprefixer": "^10.4.20",
-    "eslint": "^8.57.0",
-    "eslint-config-next": "14.2.35",
-    "postcss": "^8.4.49",
+    "eslint": "9.39.4",
+    "eslint-config-next": "15.5.18",
+    "postcss": "8.5.14",
     "prisma": "^5.22.0",
     "tailwindcss": "^3.4.15",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"
+  },
+  "overrides": {
+    "postcss": "8.5.14",
+    "next-auth": {
+      "uuid": "11.1.1"
+    }
   }
 }

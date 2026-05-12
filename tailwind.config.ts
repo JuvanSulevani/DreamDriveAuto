@@ -25,11 +25,11 @@ const config: Config = {
           500: '#6E6A60'
         },
         copper: {
-          DEFAULT: '#B45309',
-          400: '#D97706',
-          500: '#B45309',
-          600: '#92400E',
-          glow: '#F59E0B'
+          DEFAULT: '#0E7C73',
+          400: '#18A999',
+          500: '#0E7C73',
+          600: '#095B55',
+          glow: '#61D6C6'
         }
       },
       fontFamily: {

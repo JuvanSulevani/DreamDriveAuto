@@ -27,7 +27,7 @@ const TYPE_LABEL: Record<string, string> = {
   test_drive: 'Test Drive'
 };
 
-export default function LeadsTable({ leads }: { leads: Lead[] }) {
+export default function LeadsTable({ leads, loadError = false }: { leads: Lead[]; loadError?: boolean }) {
   const [filter, setFilter] = useState<string>('all');
   const [open, setOpen] = useState<string | null>(null);
 
@@ -44,6 +44,11 @@ export default function LeadsTable({ leads }: { leads: Lead[] }) {
       </div>
 
       <div className="border hairline">
+        {loadError && (
+          <div className="border-b border-copper/40 bg-copper/10 p-5 font-mono text-xs text-copper-glow">
+            Leads could not be loaded from the database. Refresh the page or check the deployment logs.
+          </div>
+        )}
         {filtered.map((l) => (
           <div key={l.id} className="border-b hairline last:border-0">
             <button

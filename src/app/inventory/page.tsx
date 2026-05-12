@@ -13,37 +13,38 @@ type SearchParams = {
   sort?: string;
 };
 
-export default async function InventoryPage({ searchParams }: { searchParams: SearchParams }) {
+export default async function InventoryPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const params = await searchParams;
   const where: Prisma.VehicleWhereInput = { status: 'available' };
 
-  if (searchParams.q) {
-    const q = searchParams.q;
+  if (params.q) {
+    const q = params.q;
     where.OR = [
       { make: { contains: q } }, { model: { contains: q } },
       { trim: { contains: q } }, { vin: { contains: q } },
       { stockNumber: { contains: q } }
     ];
   }
-  if (searchParams.make) where.make = searchParams.make;
-  if (searchParams.bodyStyle) where.bodyStyle = searchParams.bodyStyle;
-  if (searchParams.condition) where.condition = searchParams.condition;
+  if (params.make) where.make = params.make;
+  if (params.bodyStyle) where.bodyStyle = params.bodyStyle;
+  if (params.condition) where.condition = params.condition;
 
-  if (searchParams.priceMin || searchParams.priceMax) {
+  if (params.priceMin || params.priceMax) {
     where.price = {};
-    if (searchParams.priceMin) where.price.gte = Math.round(Number(searchParams.priceMin) * 100);
-    if (searchParams.priceMax) where.price.lte = Math.round(Number(searchParams.priceMax) * 100);
+    if (params.priceMin) where.price.gte = Math.round(Number(params.priceMin) * 100);
+    if (params.priceMax) where.price.lte = Math.round(Number(params.priceMax) * 100);
   }
-  if (searchParams.yearMin || searchParams.yearMax) {
+  if (params.yearMin || params.yearMax) {
     where.year = {};
-    if (searchParams.yearMin) where.year.gte = Number(searchParams.yearMin);
-    if (searchParams.yearMax) where.year.lte = Number(searchParams.yearMax);
+    if (params.yearMin) where.year.gte = Number(params.yearMin);
+    if (params.yearMax) where.year.lte = Number(params.yearMax);
   }
 
   const orderBy: Prisma.VehicleOrderByWithRelationInput =
-    searchParams.sort === 'price_asc' ? { price: 'asc' }
-    : searchParams.sort === 'price_desc' ? { price: 'desc' }
-    : searchParams.sort === 'mileage_asc' ? { mileage: 'asc' }
-    : searchParams.sort === 'year_desc' ? { year: 'desc' }
+    params.sort === 'price_asc' ? { price: 'asc' }
+    : params.sort === 'price_desc' ? { price: 'desc' }
+    : params.sort === 'mileage_asc' ? { mileage: 'asc' }
+    : params.sort === 'year_desc' ? { year: 'desc' }
     : { createdAt: 'desc' };
 
   const [vehicles, total, makes, bodyStyles] = await Promise.all([

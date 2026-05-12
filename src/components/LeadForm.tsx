@@ -9,11 +9,12 @@ type Props = {
   type?: 'contact' | 'test_drive';
   defaultMessage?: string;
   cta?: string;
+  dealerName?: string;
 };
 
 export default function LeadForm({
   vehicleId, source = 'contact_form', type = 'contact',
-  defaultMessage = '', cta = 'Send Message'
+  defaultMessage = '', cta = 'Send Message', dealerName = 'Dream Drive Auto'
 }: Props) {
   const [status, setStatus] = useState<'idle' | 'submitting' | 'ok' | 'err'>('idle');
   const [message, setMessage] = useState(defaultMessage);
@@ -99,7 +100,7 @@ export default function LeadForm({
       </button>
 
       <p className="font-mono text-[10px] text-ash">
-        By submitting, you consent to contact from {process.env.NEXT_PUBLIC_DEALER_NAME || 'Dream Drive Auto'} regarding your inquiry. We never share your information.
+        By submitting, you consent to contact from {dealerName} regarding your inquiry. We never share your information.
       </p>
     </form>
   );

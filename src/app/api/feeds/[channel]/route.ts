@@ -14,8 +14,8 @@ export const runtime = 'nodejs';
  *   GET /api/feeds/cargurus   -> CarGurus TSV
  *   GET /api/feeds/generic    -> Generic XML
  */
-export async function GET(_req: NextRequest, { params }: { params: { channel: string } }) {
-  const channel = params.channel;
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ channel: string }> }) {
+  const { channel } = await params;
   if (!['autotrader', 'cargurus', 'generic'].includes(channel)) {
     return NextResponse.json({ error: 'unknown_channel' }, { status: 404 });
   }

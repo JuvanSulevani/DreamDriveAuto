@@ -24,7 +24,7 @@ Built with Next.js 14 (App Router), TypeScript, Prisma, and Tailwind. Single cod
 - Inventory CRUD with photo upload, drag-to-reorder, status (available / pending / sold / hidden).
 - Leads inbox with type filters, expandable details, click-to-call/email.
 - Syndication console: enable channels, trigger runs, review delivery history.
-- Settings overview pulling from environment.
+- Settings editor for dealer contact details, hours, homepage copy, about-page copy, contact-page copy, and footer text.
 
 ### Backend
 - Prisma + PostgreSQL for durable production data.
@@ -234,7 +234,7 @@ Set `SMTP_*` vars to a transactional provider (Postmark, SendGrid, Resend, SES).
 
 ## Customization
 
-- **Dealer info** (name, address, phone, hours): edit `.env` plus `src/lib/dealer.ts`.
+- **Dealer info and public copy**: update `/admin/settings`; environment variables remain fallback defaults for first boot and feeds.
 - **Brand colors / fonts**: `tailwind.config.ts` and `src/app/globals.css`.
 - **Feed columns** (when partners send custom specs): `src/lib/syndication/{autotrader,cargurus,generic}.ts`.
 - **Lead routing**: `src/app/api/leads/route.ts` (add CRM webhook, Slack, etc.).

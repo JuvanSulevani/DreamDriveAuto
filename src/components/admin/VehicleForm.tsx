@@ -127,7 +127,7 @@ export default function VehicleForm({ initial }: Props) {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      setErr(data.error || 'Save failed.');
+      setErr(formatSaveError(data));
       return;
     }
 
@@ -198,8 +198,8 @@ export default function VehicleForm({ initial }: Props) {
       <Section title="Pricing & Status">
         <Grid>
           <F label="Mileage *"><input type="number" className="input-field" value={v.mileage} onChange={(e) => set('mileage', Number(e.target.value))} required /></F>
-          <F label="Price (USD) *"><input type="number" className="input-field" value={v.price / 100} onChange={(e) => set('price', Math.round(Number(e.target.value) * 100))} required /></F>
-          <F label="MSRP (USD)"><input type="number" className="input-field" value={v.msrp ? v.msrp / 100 : ''} onChange={(e) => set('msrp', e.target.value ? Math.round(Number(e.target.value) * 100) : null)} /></F>
+          <F label="Price (CAD) *"><input type="number" className="input-field" value={v.price / 100} onChange={(e) => set('price', Math.round(Number(e.target.value) * 100))} required /></F>
+          <F label="MSRP (CAD)"><input type="number" className="input-field" value={v.msrp ? v.msrp / 100 : ''} onChange={(e) => set('msrp', e.target.value ? Math.round(Number(e.target.value) * 100) : null)} /></F>
           <F label="Status">
             <select className="input-field" value={v.status} onChange={(e) => set('status', e.target.value)}>
               <option value="available">Available</option>
@@ -309,4 +309,16 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
       <span className="text-cream text-sm">{label}</span>
     </label>
   );
+}
+
+function formatSaveError(data: { error?: string; issues?: { path?: (string | number)[]; message?: string }[] }) {
+  if (Array.isArray(data.issues) && data.issues.length > 0) {
+    const issue = data.issues[0];
+    const field = issue.path?.join('.') || 'field';
+    return `Check ${field}: ${issue.message || 'invalid value'}.`;
+  }
+
+  if (data.error === 'validation') return 'Check the highlighted vehicle details and try again.';
+  if (data.error === 'unauthorized') return 'Your admin session expired. Sign in again.';
+  return data.error || 'Save failed.';
 }

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { Menu, X, Phone } from 'lucide-react';
-import { DEALER } from '@/lib/dealer';
+import { useSiteSettings } from '@/lib/use-site-settings';
 
 const NAV = [
   { href: '/inventory', label: 'Inventory' },
@@ -18,6 +18,7 @@ const NAV = [
 export default function Header() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { dealer } = useSiteSettings();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -58,10 +59,10 @@ export default function Header() {
 
         {/* CTA */}
         <div className="hidden lg:flex items-center gap-3 shrink-0">
-          <a href={`tel:${DEALER.phone.replace(/[^0-9+]/g, '')}`} className="flex items-center gap-2 group">
+          <a href={`tel:${dealer.phone.replace(/[^0-9+]/g, '')}`} className="flex items-center gap-2 group">
             <Phone size={14} className="text-copper" />
             <span className="font-mono text-xs text-cream/80 group-hover:text-cream transition-colors">
-              {DEALER.phone}
+              {dealer.phone}
             </span>
           </a>
           <Link href="/inventory" className="btn-primary">
@@ -94,10 +95,10 @@ export default function Header() {
               </Link>
             ))}
             <a
-              href={`tel:${DEALER.phone.replace(/[^0-9+]/g, '')}`}
+              href={`tel:${dealer.phone.replace(/[^0-9+]/g, '')}`}
               className="mt-4 font-mono text-xs text-ash"
             >
-              {DEALER.phone}
+              {dealer.phone}
             </a>
           </nav>
         </div>

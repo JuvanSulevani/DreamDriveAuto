@@ -5,10 +5,13 @@ import VehicleCard from '@/components/VehicleCard';
 import Ticker from '@/components/Ticker';
 import { prisma } from '@/lib/prisma';
 import { ArrowUpRight, ArrowRight } from 'lucide-react';
+import { getSiteSettings } from '@/lib/site-settings-store';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
+  const settings = await getSiteSettings();
+  const { home, dealer } = settings;
   const featured = await prisma.vehicle.findMany({
     where: { status: 'available', featured: true },
     include: { photos: { orderBy: { position: 'asc' } } },
@@ -49,17 +52,16 @@ export default async function HomePage() {
 
         <div className="relative h-full flex flex-col justify-end px-6 lg:px-12 pb-20 lg:pb-28">
           <div className="reveal max-w-6xl">
-            <div className="eyebrow">Volume 01 · Spring 2025 Catalogue</div>
+            <div className="eyebrow">{home.heroEyebrow}</div>
 
             <h1 className="display text-[15vw] md:text-[10vw] lg:text-[9rem] mt-6 leading-[0.85]">
-              Cars worth<br />
-              <span className="display-italic text-copper">keeping.</span>
+              {home.heroTitleLine1}<br />
+              <span className="display-italic text-copper">{home.heroTitleAccent}</span>
             </h1>
 
             <div className="mt-10 grid grid-cols-1 md:grid-cols-12 gap-8 max-w-5xl">
               <p className="md:col-span-6 text-cream/80 text-base leading-relaxed">
-                A curated showroom of meticulously sourced performance, luxury, and pre-owned vehicles.
-                Every car inspected. Every story documented. No pressure. No haggling.
+                {home.heroBody}
               </p>
               <div className="md:col-span-4 md:col-start-9 flex md:flex-col gap-4 md:items-end md:text-right">
                 <div>
@@ -114,15 +116,14 @@ export default async function HomePage() {
       <section className="px-6 lg:px-12 pt-24 pb-12">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 mb-12 items-end">
           <div className="md:col-span-6">
-            <div className="eyebrow">001 · The Selection</div>
+            <div className="eyebrow">{home.featuredEyebrow}</div>
             <h2 className="display text-6xl md:text-8xl mt-4 leading-[0.9]">
-              This week's <span className="display-italic text-copper">favorites.</span>
+              {home.featuredHeading} <span className="display-italic text-copper">{home.featuredAccent}</span>
             </h2>
           </div>
           <div className="md:col-span-4 md:col-start-9 md:text-right">
             <p className="text-ash text-sm leading-relaxed">
-              A small selection of cars in current rotation — chosen for their condition,
-              specification, and the stories they carry.
+              {home.featuredBody}
             </p>
             <Link href="/inventory" className="btn-ghost mt-6">
               All Inventory <ArrowRight size={12} />
@@ -141,13 +142,11 @@ export default async function HomePage() {
       <section className="px-6 lg:px-12 py-32 border-t hairline mt-20">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
           <div className="md:col-span-3">
-            <div className="eyebrow">002 · Philosophy</div>
+            <div className="eyebrow">{home.philosophyEyebrow}</div>
           </div>
           <div className="md:col-span-9">
             <h3 className="display text-4xl md:text-6xl leading-[1.05] tracking-tightest">
-              We sell cars the way <span className="display-italic">we'd want to buy them</span> — each vetted on its merits,
-              priced honestly, presented thoroughly. No back-room games.
-              No surprise add-ons. No finance product you didn't ask for.
+              {home.philosophyHeading}
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mt-20">
@@ -204,22 +203,21 @@ export default async function HomePage() {
       <section className="px-6 lg:px-12 py-32 mt-20 border-t hairline">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-12 items-center">
           <div className="md:col-span-7">
-            <div className="eyebrow">004 · By Appointment</div>
+            <div className="eyebrow">{home.appointmentEyebrow}</div>
             <h3 className="display text-5xl md:text-7xl mt-4 leading-[0.95]">
-              Visit the<br /><span className="display-italic text-copper">showroom.</span>
+              {home.appointmentHeading}<br /><span className="display-italic text-copper">{home.appointmentAccent}</span>
             </h3>
             <p className="text-ash mt-6 max-w-lg leading-relaxed">
-              Our floor is shown by appointment so we can give every guest unhurried attention.
-              Coffee will be ready. The car you're interested in will be detailed and waiting.
+              {home.appointmentBody}
             </p>
           </div>
           <div className="md:col-span-5">
             <div className="border hairline p-8">
               <div className="eyebrow mb-6">Showroom Hours</div>
               <div className="space-y-3">
-                <Hours day="Monday — Friday" hours="9:00 — 19:00" />
-                <Hours day="Saturday" hours="10:00 — 18:00" />
-                <Hours day="Sunday" hours="11:00 — 16:00" />
+                {dealer.hours.map((hour) => (
+                  <Hours key={hour.day} day={hour.day} hours={hour.hours} />
+                ))}
               </div>
               <Link href="/contact" className="btn-primary w-full justify-center mt-8">
                 Book an Appointment

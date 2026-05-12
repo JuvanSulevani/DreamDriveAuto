@@ -1,39 +1,34 @@
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { getSiteSettings } from '@/lib/site-settings-store';
 
 export const metadata = { title: 'About' };
+export const dynamic = 'force-dynamic';
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const { about } = await getSiteSettings();
+
   return (
     <>
       <Header />
       <main className="pt-32 pb-24">
         <div className="px-6 lg:px-12">
-          <div className="eyebrow text-copper">About</div>
+          <div className="eyebrow text-copper">{about.eyebrow}</div>
           <h1 className="display text-6xl md:text-9xl mt-4 leading-[0.88] tracking-tightest max-w-5xl">
-            A small dealership <span className="display-italic">with strong opinions</span> about cars.
+            {about.heading} <span className="display-italic">{about.headingAccent}</span>
           </h1>
         </div>
 
         <div className="px-6 lg:px-12 mt-24 grid grid-cols-1 md:grid-cols-12 gap-12">
           <div className="md:col-span-3">
-            <div className="eyebrow">Our story</div>
+            <div className="eyebrow">{about.storyLabel}</div>
           </div>
           <div className="md:col-span-9 max-w-3xl space-y-6 text-cream/90 leading-relaxed text-lg">
-            <p>
-              Dream Drive Auto was founded on a simple frustration: buying a used car shouldn't feel
-              like a negotiation tactic competition. We started this dealership to do the opposite —
-              to source carefully, document everything, price honestly, and treat every guest the way
-              we'd want to be treated.
-            </p>
-            <p>
-              We're small on purpose. A short floor of cars we believe in, photographed properly,
-              inspected thoroughly. You'll meet the people who picked, vetted, and reconditioned the
-              car you came to see — not a stranger reading from a printout.
-            </p>
+            <p>{about.story.primary}</p>
+            <p>{about.story.secondary}</p>
             <p className="display-italic text-2xl text-copper">
-              "The car deserves to be presented the way it was designed."
+              "{about.story.quote}"
             </p>
           </div>
         </div>
@@ -42,10 +37,9 @@ export default function AboutPage() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
             <div className="md:col-span-3"><div className="eyebrow">By the numbers</div></div>
             <div className="md:col-span-9 grid grid-cols-2 md:grid-cols-4 gap-px bg-ink-500">
-              <Stat n="180+" label="Cars sold in 2024" />
-              <Stat n="4.9" label="Average review" />
-              <Stat n="0%" label="Forced add-ons" />
-              <Stat n="7-Day" label="Return policy" />
+              {about.stats.map((stat) => (
+                <Stat key={`${stat.value}-${stat.label}`} n={stat.value} label={stat.label} />
+              ))}
             </div>
           </div>
         </div>
@@ -53,9 +47,9 @@ export default function AboutPage() {
         <div className="px-6 lg:px-12 mt-32 border-t hairline pt-20">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-12 items-end">
             <div className="md:col-span-7">
-              <div className="eyebrow">Visit us</div>
+              <div className="eyebrow">{about.visitEyebrow}</div>
               <h2 className="display text-5xl md:text-7xl mt-4 leading-[0.95]">
-                Come by.<br /><span className="display-italic">Let's talk cars.</span>
+                {about.visitHeading}<br /><span className="display-italic">{about.visitAccent}</span>
               </h2>
             </div>
             <div className="md:col-span-5">

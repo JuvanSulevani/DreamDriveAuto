@@ -1,10 +1,11 @@
 export const formatPrice = (cents: number | null | undefined) => {
   if (cents == null) return '—';
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('en-CA', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'CAD',
+    currencyDisplay: 'narrowSymbol',
     maximumFractionDigits: 0
-  }).format(cents / 100);
+  }).format(cents / 100).replace(/^\$/, 'CA$');
 };
 
 export const formatMiles = (miles: number | null | undefined) => {

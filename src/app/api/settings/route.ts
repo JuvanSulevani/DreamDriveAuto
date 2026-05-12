@@ -3,12 +3,13 @@ import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
+import { SITE_SETTING_KEYS } from '@/lib/site-settings';
 
 export const runtime = 'nodejs';
 
 const Schema = z.object({
   updates: z.array(z.object({
-    key: z.string().min(1),
+    key: z.string().min(1).refine((key) => SITE_SETTING_KEYS.has(key) || key.startsWith('syndication.'), 'Unsupported setting key'),
     value: z.string()
   }))
 });

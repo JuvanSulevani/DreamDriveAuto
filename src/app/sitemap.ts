@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { prisma } from '@/lib/prisma';
 import { DEALER } from '@/lib/dealer';
+import { hasUsableDatabaseConfig } from '@/lib/database-url';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = DEALER.website.replace(/\/$/, '');
@@ -28,7 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 }
 
 async function getSitemapVehicles() {
-  if (!process.env.DATABASE_URL) return [];
+  if (!hasUsableDatabaseConfig()) return [];
 
   try {
     return await prisma.vehicle.findMany({

@@ -8,7 +8,7 @@ async function createPrismaClient() {
 
   return new PrismaClient({
     datasourceUrl,
-    log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error']
+    log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : []
   });
 }
 

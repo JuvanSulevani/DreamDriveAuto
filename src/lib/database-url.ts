@@ -30,6 +30,14 @@ export async function resolveDatabaseUrl(env: NodeJS.ProcessEnv = process.env) {
   return `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(token)}@${host}:${port}/${database}?${params}`;
 }
 
+export function hasUsableDatabaseConfig(env: NodeJS.ProcessEnv = process.env) {
+  if (env.DATABASE_AUTH_MODE === IAM_AUTH_MODE) {
+    return Boolean(env.RDS_HOST && env.RDS_USER && env.RDS_REGION);
+  }
+
+  return Boolean(env.DATABASE_URL && /^postgres(ql)?:\/\//.test(env.DATABASE_URL));
+}
+
 function requiredEnv(env: NodeJS.ProcessEnv, key: string) {
   const value = env[key];
   if (!value) throw new Error(`${key} is required when DATABASE_AUTH_MODE=iam.`);

@@ -24,8 +24,8 @@ export function buildGenericXmlFeed(vehicles: VehicleWithPhotos[]): FeedResult {
     node.ele('bodyStyle').txt(v.bodyStyle);
     node.ele('condition').txt(v.condition);
     node.ele('mileage').txt(String(v.mileage));
-    node.ele('price', { currency: 'USD' }).txt((v.price / 100).toFixed(2));
-    if (v.msrp) node.ele('msrp', { currency: 'USD' }).txt((v.msrp / 100).toFixed(2));
+    node.ele('price', { currency: 'CAD' }).txt((v.price / 100).toFixed(2));
+    if (v.msrp) node.ele('msrp', { currency: 'CAD' }).txt((v.msrp / 100).toFixed(2));
     if (v.exteriorColor) node.ele('exteriorColor').txt(v.exteriorColor);
     if (v.interiorColor) node.ele('interiorColor').txt(v.interiorColor);
     if (v.engine) node.ele('engine').txt(v.engine);
