@@ -10,13 +10,18 @@ import { prisma } from '@/lib/prisma';
 import { formatPrice, formatMiles, conditionLabel } from '@/lib/format';
 import { DEALER } from '@/lib/dealer';
 import { getSiteSettings } from '@/lib/site-settings-store';
+import { safePublicQuery } from '@/lib/public-query';
 import { Phone, MapPin, ShieldCheck, FileText, ChevronLeft } from 'lucide-react';
 
 export const revalidate = 60;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const v = await prisma.vehicle.findUnique({ where: { slug } });
+  const v = await safePublicQuery(
+    'vehicle.metadata',
+    () => prisma.vehicle.findUnique({ where: { slug } }),
+    null
+  );
   if (!v) return { title: 'Vehicle not found' };
   return {
     title: `${v.year} ${v.make} ${v.model}${v.trim ? ' ' + v.trim : ''}`,
@@ -27,23 +32,31 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function VehiclePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const { dealer } = await getSiteSettings();
-  const v = await prisma.vehicle.findUnique({
-    where: { slug },
-    include: { photos: { orderBy: { position: 'asc' } } }
-  });
+  const v = await safePublicQuery(
+    'vehicle.detail',
+    () => prisma.vehicle.findUnique({
+      where: { slug },
+      include: { photos: { orderBy: { position: 'asc' } } }
+    }),
+    null
+  );
 
   if (!v || v.status === 'hidden') notFound();
 
-  const similar = await prisma.vehicle.findMany({
-    where: {
-      status: 'available',
-      bodyStyle: v.bodyStyle,
-      NOT: { id: v.id }
-    },
-    include: { photos: { orderBy: { position: 'asc' } } },
-    orderBy: { createdAt: 'desc' },
-    take: 4
-  });
+  const similar = await safePublicQuery(
+    'vehicle.similar',
+    () => prisma.vehicle.findMany({
+      where: {
+        status: 'available',
+        bodyStyle: v.bodyStyle,
+        NOT: { id: v.id }
+      },
+      include: { photos: { orderBy: { position: 'asc' } } },
+      orderBy: { createdAt: 'desc' },
+      take: 4
+    }),
+    []
+  );
 
   const features = (v.features || '').split(',').map((s) => s.trim()).filter(Boolean);
   const savings = v.msrp ? v.msrp - v.price : 0;

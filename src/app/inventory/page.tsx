@@ -4,6 +4,7 @@ import VehicleCard from '@/components/VehicleCard';
 import InventoryFilters from '@/components/InventoryFilters';
 import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
+import { safePublicQuery } from '@/lib/public-query';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,22 +48,30 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
     : params.sort === 'year_desc' ? { year: 'desc' }
     : { createdAt: 'desc' };
 
-  const [vehicles, total, makes, bodyStyles] = await Promise.all([
-    prisma.vehicle.findMany({
-      where,
-      include: { photos: { orderBy: { position: 'asc' } } },
-      orderBy
-    }),
-    prisma.vehicle.count({ where }),
-    prisma.vehicle.findMany({
-      where: { status: 'available' },
-      distinct: ['make'], select: { make: true }, orderBy: { make: 'asc' }
-    }),
-    prisma.vehicle.findMany({
-      where: { status: 'available' },
-      distinct: ['bodyStyle'], select: { bodyStyle: true }, orderBy: { bodyStyle: 'asc' }
-    })
-  ]);
+  const { vehicles, total, makes, bodyStyles } = await safePublicQuery(
+    'inventory.list',
+    async () => {
+      const [vehicles, total, makes, bodyStyles] = await Promise.all([
+        prisma.vehicle.findMany({
+          where,
+          include: { photos: { orderBy: { position: 'asc' } } },
+          orderBy
+        }),
+        prisma.vehicle.count({ where }),
+        prisma.vehicle.findMany({
+          where: { status: 'available' },
+          distinct: ['make'], select: { make: true }, orderBy: { make: 'asc' }
+        }),
+        prisma.vehicle.findMany({
+          where: { status: 'available' },
+          distinct: ['bodyStyle'], select: { bodyStyle: true }, orderBy: { bodyStyle: 'asc' }
+        })
+      ]);
+
+      return { vehicles, total, makes, bodyStyles };
+    },
+    { vehicles: [], total: 0, makes: [], bodyStyles: [] }
+  );
 
   return (
     <>

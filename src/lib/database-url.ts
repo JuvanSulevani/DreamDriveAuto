@@ -1,15 +1,27 @@
 import { Signer } from '@aws-sdk/rds-signer';
 
 const IAM_AUTH_MODE = 'iam';
+const POSTGRES_URL_PATTERN = /^postgres(ql)?:\/\//;
 
 export async function resolveDatabaseUrl(env: NodeJS.ProcessEnv = process.env) {
+  if (isPostgresUrl(env.DATABASE_URL)) {
+    return env.DATABASE_URL;
+  }
+
   if (env.DATABASE_AUTH_MODE !== IAM_AUTH_MODE) {
     return env.DATABASE_URL;
   }
 
-  const host = requiredEnv(env, 'RDS_HOST');
-  const user = requiredEnv(env, 'RDS_USER');
-  const region = requiredEnv(env, 'RDS_REGION');
+  if (!env.RDS_HOST || !env.RDS_USER || !env.RDS_REGION) {
+    console.error(
+      '[database-url] DATABASE_AUTH_MODE=iam requires RDS_HOST, RDS_USER, and RDS_REGION unless DATABASE_URL is set.'
+    );
+    return env.DATABASE_URL;
+  }
+
+  const host = env.RDS_HOST;
+  const user = env.RDS_USER;
+  const region = env.RDS_REGION;
   const port = Number(env.RDS_PORT || 5432);
   const database = env.RDS_DATABASE || 'postgres';
 
@@ -20,7 +32,17 @@ export async function resolveDatabaseUrl(env: NodeJS.ProcessEnv = process.env) {
     region
   });
 
-  const token = await signer.getAuthToken();
+  let token: string;
+  try {
+    token = await signer.getAuthToken();
+  } catch (error) {
+    console.error(
+      '[database-url] Unable to create an IAM database auth token. Attach AWS runtime credentials or set DATABASE_URL to a PostgreSQL connection string.',
+      error
+    );
+    return env.DATABASE_URL;
+  }
+
   const params = new URLSearchParams({
     schema: 'public',
     sslmode: 'require',
@@ -31,15 +53,15 @@ export async function resolveDatabaseUrl(env: NodeJS.ProcessEnv = process.env) {
 }
 
 export function hasUsableDatabaseConfig(env: NodeJS.ProcessEnv = process.env) {
+  if (isPostgresUrl(env.DATABASE_URL)) return true;
+
   if (env.DATABASE_AUTH_MODE === IAM_AUTH_MODE) {
     return Boolean(env.RDS_HOST && env.RDS_USER && env.RDS_REGION);
   }
 
-  return Boolean(env.DATABASE_URL && /^postgres(ql)?:\/\//.test(env.DATABASE_URL));
+  return false;
 }
 
-function requiredEnv(env: NodeJS.ProcessEnv, key: string) {
-  const value = env[key];
-  if (!value) throw new Error(`${key} is required when DATABASE_AUTH_MODE=iam.`);
-  return value;
+function isPostgresUrl(url: string | undefined) {
+  return Boolean(url && POSTGRES_URL_PATTERN.test(url));
 }

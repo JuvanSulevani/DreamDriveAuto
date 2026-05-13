@@ -6,30 +6,17 @@ import Ticker from '@/components/Ticker';
 import { prisma } from '@/lib/prisma';
 import { ArrowUpRight, ArrowRight } from 'lucide-react';
 import { getSiteSettings } from '@/lib/site-settings-store';
+import { safePublicQuery } from '@/lib/public-query';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  const settings = await getSiteSettings();
+  const [settings, inventory] = await Promise.all([getSiteSettings(), getHomeInventory()]);
   const { home, dealer } = settings;
-  const featured = await prisma.vehicle.findMany({
-    where: { status: 'available', featured: true },
-    include: { photos: { orderBy: { position: 'asc' } } },
-    orderBy: { createdAt: 'desc' },
-    take: 4
-  });
-
-  const recent = await prisma.vehicle.findMany({
-    where: { status: 'available' },
-    include: { photos: { orderBy: { position: 'asc' } } },
-    orderBy: { createdAt: 'desc' },
-    take: 8
-  });
+  const { featured, recent, totalCount } = inventory;
 
   const heroVehicle = featured[0] ?? recent[0];
   const heroPhoto = heroVehicle?.photos[0]?.url;
-
-  const totalCount = await prisma.vehicle.count({ where: { status: 'available' } });
 
   const makes = Array.from(new Set(recent.map((r) => r.make))).slice(0, 8);
 
@@ -229,6 +216,32 @@ export default async function HomePage() {
 
       <Footer />
     </>
+  );
+}
+
+async function getHomeInventory() {
+  return safePublicQuery(
+    'home.inventory',
+    async () => {
+      const [featured, recent, totalCount] = await Promise.all([
+        prisma.vehicle.findMany({
+          where: { status: 'available', featured: true },
+          include: { photos: { orderBy: { position: 'asc' } } },
+          orderBy: { createdAt: 'desc' },
+          take: 4
+        }),
+        prisma.vehicle.findMany({
+          where: { status: 'available' },
+          include: { photos: { orderBy: { position: 'asc' } } },
+          orderBy: { createdAt: 'desc' },
+          take: 8
+        }),
+        prisma.vehicle.count({ where: { status: 'available' } })
+      ]);
+
+      return { featured, recent, totalCount };
+    },
+    { featured: [], recent: [], totalCount: 0 }
   );
 }
 
