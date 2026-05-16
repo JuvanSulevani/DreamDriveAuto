@@ -159,10 +159,19 @@ body::before {
 }
 
 /* The horizontal infinite ticker */
+@keyframes ticker {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-25%); }
+}
+.ticker-wrapper {
+  /* Fade edges so items dissolve out instead of hard-clipping */
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 6%, black 94%, transparent 100%);
+}
 .ticker-track {
   display: flex;
   width: max-content;
-  animation: ticker 60s linear infinite;
+  animation: ticker 50s linear infinite;
 }
 .ticker-track:hover {
   animation-play-state: paused;
