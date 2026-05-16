@@ -1,5 +1,6 @@
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { NextRequest, NextResponse } from 'next/server';
+import { getExplicitAwsCredentials } from '@/lib/aws-credentials';
 import { getS3UploadConfig, getUploadPrefix } from '@/lib/uploads';
 
 export const runtime = 'nodejs';
@@ -15,7 +16,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ key
   }
 
   try {
-    const client = new S3Client({ region: config.region });
+    const credentials = getExplicitAwsCredentials();
+    const client = new S3Client({ region: config.region, ...(credentials && { credentials }) });
     const object = await client.send(new GetObjectCommand({ Bucket: config.bucket, Key: key }));
 
     if (!object.Body) return NextResponse.json({ error: 'not_found' }, { status: 404 });

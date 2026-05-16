@@ -4,6 +4,7 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { authOptions } from '@/lib/auth';
+import { getExplicitAwsCredentials } from '@/lib/aws-credentials';
 import {
   MAX_UPLOAD_BYTES,
   createUploadKey,
@@ -38,7 +39,8 @@ export async function POST(req: NextRequest) {
   const s3Config = getS3UploadConfig();
 
   if (s3Config) {
-    const client = new S3Client({ region: s3Config.region });
+    const credentials = getExplicitAwsCredentials();
+    const client = new S3Client({ region: s3Config.region, ...(credentials && { credentials }) });
     await client.send(new PutObjectCommand({
       Bucket: s3Config.bucket,
       Key: key,
