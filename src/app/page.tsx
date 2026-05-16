@@ -69,7 +69,7 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {heroVehicle && (
+        {heroVehicle && !home.heroImageUrl && (
           <div className="absolute right-6 lg:right-12 bottom-20 lg:bottom-28 hidden md:block">
             <Link href={`/inventory/${heroVehicle.slug}`} className="group flex flex-col items-end gap-2">
               <div className="eyebrow text-ash">Currently Featured</div>
