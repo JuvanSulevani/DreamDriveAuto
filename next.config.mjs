@@ -12,7 +12,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'cdn.dreamdriveauto.com' }
     ]
   },
-  serverExternalPackages: ['ssh2', 'ssh2-sftp-client', 'cpu-features']
+  serverExternalPackages: ['ssh2', 'ssh2-sftp-client', 'cpu-features', '@aws-sdk/rds-signer', '@aws-sdk/credential-providers', '@aws-sdk/credential-provider-node']
 };
 
 export default nextConfig;
