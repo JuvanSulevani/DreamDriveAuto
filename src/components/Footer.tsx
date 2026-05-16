@@ -68,7 +68,6 @@ export default function Footer() {
           <div className="font-mono text-[11px] text-ash flex gap-8">
             <Link href="/privacy" className="hover:text-cream">Privacy</Link>
             <Link href="/terms" className="hover:text-cream">Terms</Link>
-            <Link href="/admin" className="hover:text-cream">Admin</Link>
           </div>
         </div>
       </div>
