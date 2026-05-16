@@ -25,11 +25,20 @@ export async function resolveDatabaseUrl(env: NodeJS.ProcessEnv = process.env) {
   const port = Number(env.RDS_PORT || 5432);
   const database = env.RDS_DATABASE || 'postgres';
 
+  // If explicit RDS credentials are provided (via RDS_AWS_ACCESS_KEY_ID / RDS_AWS_SECRET_ACCESS_KEY),
+  // pass them directly to the Signer so it doesn't rely on the Lambda credential provider chain,
+  // which can be unreliable in Amplify SSR Lambda cold-starts.
+  const explicitCredentials =
+    env.RDS_AWS_ACCESS_KEY_ID && env.RDS_AWS_SECRET_ACCESS_KEY
+      ? { accessKeyId: env.RDS_AWS_ACCESS_KEY_ID, secretAccessKey: env.RDS_AWS_SECRET_ACCESS_KEY }
+      : undefined;
+
   const signer = new Signer({
     hostname: host,
     port,
     username: user,
-    region
+    region,
+    ...(explicitCredentials && { credentials: explicitCredentials })
   });
 
   let token: string;
