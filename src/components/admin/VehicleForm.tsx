@@ -151,7 +151,7 @@ export default function VehicleForm({ initial }: Props) {
         <Grid>
           <F label="VIN *"><input className="input-field" value={v.vin} onChange={(e) => set('vin', e.target.value.toUpperCase())} required maxLength={17} /></F>
           <F label="Stock Number *"><input className="input-field" value={v.stockNumber} onChange={(e) => set('stockNumber', e.target.value)} required /></F>
-          <F label="Year *"><input type="number" className="input-field" value={v.year} onChange={(e) => set('year', Number(e.target.value))} required /></F>
+          <F label="Year *"><input type="text" inputMode="numeric" className="input-field" value={String(v.year)} onChange={(e) => set('year', parseInt(e.target.value, 10) || new Date().getFullYear())} required /></F>
           <F label="Make *"><input className="input-field" value={v.make} onChange={(e) => set('make', e.target.value)} required /></F>
           <F label="Model *"><input className="input-field" value={v.model} onChange={(e) => set('model', e.target.value)} required /></F>
           <F label="Trim"><input className="input-field" value={v.trim ?? ''} onChange={(e) => set('trim', e.target.value)} /></F>
@@ -186,20 +186,20 @@ export default function VehicleForm({ initial }: Props) {
               <option>Gasoline</option><option>Diesel</option><option>Hybrid</option><option>Plug-in Hybrid</option><option>Electric</option>
             </select>
           </F>
-          <F label="City MPG"><input type="number" className="input-field" value={v.cityMpg ?? ''} onChange={(e) => set('cityMpg', e.target.value ? Number(e.target.value) : null)} /></F>
-          <F label="Highway MPG"><input type="number" className="input-field" value={v.highwayMpg ?? ''} onChange={(e) => set('highwayMpg', e.target.value ? Number(e.target.value) : null)} /></F>
+          <F label="City fuel economy (L/100km)"><input type="text" inputMode="decimal" className="input-field" value={v.cityMpg ?? ''} onChange={(e) => set('cityMpg', e.target.value ? parseFloat(e.target.value) : null)} /></F>
+          <F label="Hwy fuel economy (L/100km)"><input type="text" inputMode="decimal" className="input-field" value={v.highwayMpg ?? ''} onChange={(e) => set('highwayMpg', e.target.value ? parseFloat(e.target.value) : null)} /></F>
           <F label="Exterior Color"><input className="input-field" value={v.exteriorColor ?? ''} onChange={(e) => set('exteriorColor', e.target.value)} /></F>
           <F label="Interior Color"><input className="input-field" value={v.interiorColor ?? ''} onChange={(e) => set('interiorColor', e.target.value)} /></F>
-          <F label="Doors"><input type="number" className="input-field" value={v.doors ?? ''} onChange={(e) => set('doors', e.target.value ? Number(e.target.value) : null)} /></F>
-          <F label="Seats"><input type="number" className="input-field" value={v.seats ?? ''} onChange={(e) => set('seats', e.target.value ? Number(e.target.value) : null)} /></F>
+          <F label="Doors"><input type="text" inputMode="numeric" className="input-field" value={v.doors ?? ''} onChange={(e) => set('doors', e.target.value ? parseInt(e.target.value, 10) : null)} /></F>
+          <F label="Seats"><input type="text" inputMode="numeric" className="input-field" value={v.seats ?? ''} onChange={(e) => set('seats', e.target.value ? parseInt(e.target.value, 10) : null)} /></F>
         </Grid>
       </Section>
 
       <Section title="Pricing & Status">
         <Grid>
-          <F label="Mileage *"><input type="number" className="input-field" value={v.mileage} onChange={(e) => set('mileage', Number(e.target.value))} required /></F>
-          <F label="Price (CAD) *"><input type="number" className="input-field" value={v.price / 100} onChange={(e) => set('price', Math.round(Number(e.target.value) * 100))} required /></F>
-          <F label="MSRP (CAD)"><input type="number" className="input-field" value={v.msrp ? v.msrp / 100 : ''} onChange={(e) => set('msrp', e.target.value ? Math.round(Number(e.target.value) * 100) : null)} /></F>
+          <F label="Mileage *"><input type="text" inputMode="numeric" className="input-field" value={String(v.mileage)} onChange={(e) => set('mileage', parseInt(e.target.value, 10) || 0)} required /></F>
+          <F label="Price (CAD) *"><input type="text" inputMode="decimal" className="input-field" value={v.price === 0 ? '' : String(v.price / 100)} onChange={(e) => set('price', e.target.value ? Math.round(parseFloat(e.target.value) * 100) : 0)} required /></F>
+          <F label="MSRP (CAD)"><input type="text" inputMode="decimal" className="input-field" value={v.msrp ? String(v.msrp / 100) : ''} onChange={(e) => set('msrp', e.target.value ? Math.round(parseFloat(e.target.value) * 100) : null)} /></F>
           <F label="Status">
             <select className="input-field" value={v.status} onChange={(e) => set('status', e.target.value)}>
               <option value="available">Available</option>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Check, Loader2, RotateCcw, Save } from 'lucide-react';
 import type { SiteSettingField } from '@/lib/site-settings';
 
@@ -111,7 +111,7 @@ function Field({
   value: string;
   onChange: (value: string) => void;
 }) {
-  const wide = field.input === 'textarea';
+  const wide = field.input === 'textarea' || field.input === 'image';
   return (
     <div className={wide ? 'md:col-span-2' : ''}>
       <label className="field-label">{field.label}</label>
@@ -122,6 +122,8 @@ function Field({
           value={value}
           onChange={(event) => onChange(event.target.value)}
         />
+      ) : field.input === 'image' ? (
+        <ImageField value={value} onChange={onChange} />
       ) : (
         <input
           className="input-field"
@@ -129,6 +131,53 @@ function Field({
           value={value}
           onChange={(event) => onChange(event.target.value)}
         />
+      )}
+    </div>
+  );
+}
+
+function ImageField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [uploading, setUploading] = React.useState(false);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      onChange(data.url as string);
+    } catch {
+      // ignore — keep existing value
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-2">
+        <input
+          className="input-field flex-1"
+          type="url"
+          placeholder="https://… or upload below"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        <label className="btn-ghost cursor-pointer shrink-0">
+          {uploading ? <span className="font-mono text-[11px]">Uploading…</span> : <span className="font-mono text-[11px]">Upload</span>}
+          <input type="file" accept="image/*" className="hidden" onChange={handleFile} disabled={uploading} />
+        </label>
+      </div>
+      {value && (
+        <div className="relative w-full aspect-[16/5] overflow-hidden bg-ink-700 border hairline">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={value} alt="Hero preview" className="w-full h-full object-cover" />
+        </div>
       )}
     </div>
   );

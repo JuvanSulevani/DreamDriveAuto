@@ -16,7 +16,7 @@ export default async function HomePage() {
   const { featured, recent, totalCount } = inventory;
 
   const heroVehicle = featured[0] ?? recent[0];
-  const heroPhoto = heroVehicle?.photos[0]?.url;
+  const heroPhoto = home.heroImageUrl || heroVehicle?.photos[0]?.url;
 
   const makes = Array.from(new Set(recent.map((r) => r.make))).slice(0, 8);
 

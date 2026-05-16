@@ -143,8 +143,8 @@ export default async function VehiclePage({ params }: { params: Promise<{ slug: 
                 <SpecRow label="Drivetrain" value={v.drivetrain || '—'} />
                 <SpecRow label="Fuel" value={v.fuelType || '—'} />
                 <SpecRow
-                  label="MPG"
-                  value={v.cityMpg && v.highwayMpg ? `${v.cityMpg} city / ${v.highwayMpg} hwy` : '—'}
+                  label="Fuel economy"
+                  value={v.cityMpg && v.highwayMpg ? `${v.cityMpg} / ${v.highwayMpg} L/100km` : '—'}
                 />
                 <SpecRow label="Exterior Color" value={v.exteriorColor || '—'} />
                 <SpecRow label="Interior" value={v.interiorColor || '—'} />

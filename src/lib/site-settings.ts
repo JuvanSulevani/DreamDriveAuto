@@ -17,6 +17,7 @@ export type SiteSettings = {
     heroTitleLine1: string;
     heroTitleAccent: string;
     heroBody: string;
+    heroImageUrl: string;
     featuredEyebrow: string;
     featuredHeading: string;
     featuredAccent: string;
@@ -58,7 +59,7 @@ export type SiteSettingField = {
   key: string;
   group: string;
   label: string;
-  input: 'text' | 'textarea' | 'email' | 'tel' | 'url';
+  input: 'text' | 'textarea' | 'email' | 'tel' | 'url' | 'image';
   rows?: number;
 };
 
@@ -81,6 +82,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     heroTitleAccent: 'keeping.',
     heroBody:
       'A curated showroom of meticulously sourced performance, luxury, and pre-owned vehicles. Every car inspected. Every story documented. No pressure. No haggling.',
+    heroImageUrl: '',
     featuredEyebrow: '001 - The Selection',
     featuredHeading: "This week's",
     featuredAccent: 'favorites.',
@@ -146,6 +148,7 @@ export const SITE_SETTING_FIELDS: SiteSettingField[] = [
   { key: 'home.heroTitleLine1', group: 'Homepage hero', label: 'Headline first line', input: 'text' },
   { key: 'home.heroTitleAccent', group: 'Homepage hero', label: 'Headline accent', input: 'text' },
   { key: 'home.heroBody', group: 'Homepage hero', label: 'Intro copy', input: 'textarea', rows: 4 },
+  { key: 'home.heroImageUrl', group: 'Homepage hero', label: 'Hero background image', input: 'image' },
   { key: 'home.featuredEyebrow', group: 'Homepage sections', label: 'Featured eyebrow', input: 'text' },
   { key: 'home.featuredHeading', group: 'Homepage sections', label: 'Featured heading', input: 'text' },
   { key: 'home.featuredAccent', group: 'Homepage sections', label: 'Featured accent', input: 'text' },
