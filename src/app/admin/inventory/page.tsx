@@ -54,7 +54,36 @@ export default async function AdminInventoryPage({ searchParams }: { searchParam
         <Pill href="/admin/inventory?status=hidden" active={params.status === 'hidden'} label={`Hidden (${countByStatus.hidden ?? 0})`} />
       </div>
 
-      <div className="border hairline">
+      {/* Mobile card list */}
+      <div className="md:hidden border hairline divide-y divide-[#2A2823]">
+        {vehicles.map((v) => (
+          <Link key={v.id} href={`/admin/inventory/${v.id}`}
+            className="flex gap-3 px-4 py-4 hover:bg-ink-700 transition-colors">
+            <div className="w-20 h-14 bg-ink-700 shrink-0 overflow-hidden">
+              {v.photos[0] ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={v.photos[0].url} alt="" className="w-full h-full object-cover" />
+              ) : <div className="w-full h-full" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-cream text-sm font-medium truncate">
+                {v.year} {v.make} {v.model} {v.trim}
+              </div>
+              <div className="font-mono text-[10px] text-ash mt-0.5">{v.bodyStyle} · {v.condition}</div>
+              <div className="flex items-center justify-between mt-2">
+                <span className="font-mono text-xs text-cream/80">{formatPrice(v.price)}</span>
+                <StatusBadge status={v.status} />
+              </div>
+            </div>
+          </Link>
+        ))}
+        {vehicles.length === 0 && (
+          <div className="p-12 text-center text-ash">No vehicles match.</div>
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block border hairline">
         <div className="grid grid-cols-12 gap-4 px-4 py-3 border-b hairline spec-label">
           <div className="col-span-1">Photo</div>
           <div className="col-span-4">Vehicle</div>

@@ -50,7 +50,7 @@ export default function SettingsForm({ fields, values }: Props) {
 
   return (
     <div className="max-w-5xl">
-      <div className="sticky top-0 z-10 -mx-1 mb-10 flex flex-wrap items-center justify-between gap-4 bg-ink/95 px-1 py-4 backdrop-blur">
+      <div className="sticky top-14 lg:top-0 z-10 -mx-1 mb-10 flex flex-wrap items-center justify-between gap-4 bg-ink/95 px-1 py-4 backdrop-blur">
         <div>
           <div className="eyebrow text-ash">Editable site content</div>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ash">
