@@ -9,14 +9,6 @@ export default function VehicleGallery({ photos }: { photos: Photo[] }) {
   const [active, setActive] = useState(0);
   const [lightbox, setLightbox] = useState(false);
 
-  if (photos.length === 0) {
-    return (
-      <div className="aspect-[16/10] bg-ink-700 flex items-center justify-center text-ash font-mono text-xs">
-        No images
-      </div>
-    );
-  }
-
   const advance = (delta: number) =>
     setActive((i) => (i + delta + photos.length) % photos.length);
 
@@ -32,6 +24,14 @@ export default function VehicleGallery({ photos }: { photos: Photo[] }) {
     return () => window.removeEventListener('keydown', onKey);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lightbox]);
+
+  if (photos.length === 0) {
+    return (
+      <div className="aspect-[16/10] bg-ink-700 flex items-center justify-center text-ash font-mono text-xs">
+        No images
+      </div>
+    );
+  }
 
   return (
     <div>
