@@ -132,7 +132,7 @@ body::before {
   background: transparent;
   border: 0;
   border-bottom: 1px solid #2A2823;
-  padding: 0.75rem 0;
+  padding: 0.75rem 0 0.75rem 0.5rem;
   color: #F2EDE4;
   font-family: var(--font-geist), sans-serif;
   font-size: 0.95rem;

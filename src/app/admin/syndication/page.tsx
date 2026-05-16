@@ -17,10 +17,30 @@ export default async function AdminSyndicationPage() {
     take: 30
   });
 
-  // Detect missing SFTP credentials so we can surface a warning
+  // Helper to read DB SFTP values for a channel
+  function sftpValuesForChannel(channel: string) {
+    return {
+      host: map[`syndication.${channel}.sftp.host`] || '',
+      port: map[`syndication.${channel}.sftp.port`] || '',
+      user: map[`syndication.${channel}.sftp.user`] || '',
+      pass: map[`syndication.${channel}.sftp.pass`] || '',
+      path: map[`syndication.${channel}.sftp.path`] || '',
+    };
+  }
+
+  const atSftp = sftpValuesForChannel('autotrader');
+  const cgSftp = sftpValuesForChannel('cargurus');
+
+  // Detect missing SFTP credentials — DB values take priority over env vars
   const credentials = {
-    autotrader: Boolean(process.env.AUTOTRADER_SFTP_HOST && process.env.AUTOTRADER_SFTP_USER && process.env.AUTOTRADER_SFTP_PASS),
-    cargurus: Boolean(process.env.CARGURUS_SFTP_HOST && process.env.CARGURUS_SFTP_USER && process.env.CARGURUS_SFTP_PASS)
+    autotrader: Boolean(
+      (atSftp.host && atSftp.user && atSftp.pass) ||
+      (process.env.AUTOTRADER_SFTP_HOST && process.env.AUTOTRADER_SFTP_USER && process.env.AUTOTRADER_SFTP_PASS)
+    ),
+    cargurus: Boolean(
+      (cgSftp.host && cgSftp.user && cgSftp.pass) ||
+      (process.env.CARGURUS_SFTP_HOST && process.env.CARGURUS_SFTP_USER && process.env.CARGURUS_SFTP_PASS)
+    )
   };
 
   return (
@@ -38,6 +58,7 @@ export default async function AdminSyndicationPage() {
         autoTraderEnabled={map['syndication.autotrader.enabled'] === 'true'}
         carGurusEnabled={map['syndication.cargurus.enabled'] === 'true'}
         credentials={credentials}
+        sftpValues={{ autotrader: atSftp, cargurus: cgSftp }}
         runs={runs.map((r) => ({
           id: r.id,
           channel: r.channel,

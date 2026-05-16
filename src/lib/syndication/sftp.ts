@@ -22,17 +22,29 @@ export async function uploadToSftp(config: DeliveryConfig, feed: FeedResult): Pr
   }
 }
 
-export function deliveryConfigForChannel(channel: 'autotrader' | 'cargurus'): DeliveryConfig | null {
+export type SftpDbOverrides = {
+  host?: string;
+  user?: string;
+  pass?: string;
+  port?: string;
+  path?: string;
+};
+
+export function deliveryConfigForChannel(
+  channel: 'autotrader' | 'cargurus',
+  dbOverrides?: SftpDbOverrides
+): DeliveryConfig | null {
   const prefix = channel.toUpperCase();
-  const host = process.env[`${prefix}_SFTP_HOST`];
-  const user = process.env[`${prefix}_SFTP_USER`];
-  const pass = process.env[`${prefix}_SFTP_PASS`];
+  // DB-stored credentials take priority over env vars
+  const host = dbOverrides?.host || process.env[`${prefix}_SFTP_HOST`];
+  const user = dbOverrides?.user || process.env[`${prefix}_SFTP_USER`];
+  const pass = dbOverrides?.pass || process.env[`${prefix}_SFTP_PASS`];
   if (!host || !user || !pass) return null;
   return {
     host,
-    port: Number(process.env[`${prefix}_SFTP_PORT`] || 22),
+    port: Number(dbOverrides?.port || process.env[`${prefix}_SFTP_PORT`] || 22),
     username: user,
     password: pass,
-    remotePath: process.env[`${prefix}_SFTP_PATH`] || '/'
+    remotePath: dbOverrides?.path || process.env[`${prefix}_SFTP_PATH`] || '/'
   };
 }

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Play, AlertTriangle, Check, X } from 'lucide-react';
+import { Loader2, Play, AlertTriangle, Check, X, ChevronDown, ChevronUp, KeyRound } from 'lucide-react';
 
 type Run = {
   id: string;
@@ -15,14 +15,23 @@ type Run = {
   errorMessage: string | null;
 };
 
+type SftpCreds = {
+  host: string;
+  port: string;
+  user: string;
+  pass: string;
+  path: string;
+};
+
 type Props = {
   autoTraderEnabled: boolean;
   carGurusEnabled: boolean;
   credentials: { autotrader: boolean; cargurus: boolean };
+  sftpValues: { autotrader: SftpCreds; cargurus: SftpCreds };
   runs: Run[];
 };
 
-export default function SyndicationControls({ autoTraderEnabled, carGurusEnabled, credentials, runs }: Props) {
+export default function SyndicationControls({ autoTraderEnabled, carGurusEnabled, credentials, sftpValues, runs }: Props) {
   const router = useRouter();
   const [at, setAt] = useState(autoTraderEnabled);
   const [cg, setCg] = useState(carGurusEnabled);
@@ -63,21 +72,25 @@ export default function SyndicationControls({ autoTraderEnabled, carGurusEnabled
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ChannelCard
+            channel="autotrader"
             name="AutoTrader"
             description="Inventory CSV delivered via SFTP. AutoTrader pulls and ingests on its end."
             enabled={at}
             onToggle={setAt}
             credentialsOk={credentials.autotrader}
+            initialCreds={sftpValues.autotrader}
             onTrigger={(dry) => trigger('autotrader', dry)}
             busy={busy === 'autotrader'}
             specEndpoint="/api/feeds/autotrader"
           />
           <ChannelCard
+            channel="cargurus"
             name="CarGurus"
             description="Tab-delimited inventory feed delivered via SFTP."
             enabled={cg}
             onToggle={setCg}
             credentialsOk={credentials.cargurus}
+            initialCreds={sftpValues.cargurus}
             onTrigger={(dry) => trigger('cargurus', dry)}
             busy={busy === 'cargurus'}
             specEndpoint="/api/feeds/cargurus"
@@ -134,28 +147,78 @@ export default function SyndicationControls({ autoTraderEnabled, carGurusEnabled
       <section className="border hairline p-6 bg-ink-700/30">
         <div className="eyebrow mb-3">How it works</div>
         <p className="text-cream/85 text-sm leading-relaxed max-w-3xl">
-          AutoTrader and CarGurus do not provide a public REST API for posting inventory.
-          They accept a standardized inventory feed via SFTP on a fixed schedule. Configure
-          your dealer-specific SFTP credentials in <span className="font-mono text-copper">.env</span>,
-          enable the channel above, and the worker will deliver fresh feeds on the schedule defined
-          by <span className="font-mono text-copper">SYNDICATION_CRON</span> (default every 6 hours).
-          Most partners ingest within a few hours of receiving the feed.
+          AutoTrader and CarGurus accept inventory feeds via SFTP on a fixed schedule.
+          Enter your dealer-specific SFTP credentials in the channel cards above, enable the channel,
+          and the worker will deliver fresh feeds on the schedule defined by{' '}
+          <span className="font-mono text-copper">SYNDICATION_CRON</span> (default every 6 hours).
+          Credentials are stored securely in the database. Environment-variable credentials
+          (e.g. <span className="font-mono text-copper">AUTOTRADER_SFTP_HOST</span>) are still
+          honoured as a fallback. Most partners ingest within a few hours of receiving the feed.
         </p>
       </section>
     </div>
   );
 }
 
-function ChannelCard({ name, description, enabled, onToggle, credentialsOk, onTrigger, busy, specEndpoint }: {
+function ChannelCard({
+  channel,
+  name,
+  description,
+  enabled,
+  onToggle,
+  credentialsOk,
+  initialCreds,
+  onTrigger,
+  busy,
+  specEndpoint,
+}: {
+  channel: string;
   name: string;
   description: string;
   enabled: boolean;
   onToggle: (b: boolean) => void;
   credentialsOk: boolean;
+  initialCreds: SftpCreds;
   onTrigger: (dryRun: boolean) => void;
   busy: boolean;
   specEndpoint: string;
 }) {
+  const [showCreds, setShowCreds] = useState(!credentialsOk);
+  const [creds, setCreds] = useState<SftpCreds>(initialCreds);
+  const [credsBusy, setCredsBusy] = useState(false);
+  const [credsSavedAt, setCredsSavedAt] = useState<number | null>(null);
+  const [credsError, setCredsError] = useState<string | null>(null);
+
+  function setField(field: keyof SftpCreds, value: string) {
+    setCreds((prev) => ({ ...prev, [field]: value }));
+  }
+
+  async function saveCreds() {
+    setCredsBusy(true);
+    setCredsError(null);
+    try {
+      const updates = [
+        { key: `syndication.${channel}.sftp.host`, value: creds.host },
+        { key: `syndication.${channel}.sftp.port`, value: creds.port },
+        { key: `syndication.${channel}.sftp.user`, value: creds.user },
+        { key: `syndication.${channel}.sftp.pass`, value: creds.pass },
+        { key: `syndication.${channel}.sftp.path`, value: creds.path },
+      ].filter((u) => u.value.trim() !== '' || u.key.endsWith('.pass'));
+
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates })
+      });
+      if (!res.ok) throw new Error('Save failed');
+      setCredsSavedAt(Date.now());
+    } catch {
+      setCredsError('Failed to save. Please try again.');
+    } finally {
+      setCredsBusy(false);
+    }
+  }
+
   return (
     <div className="border hairline p-6">
       <div className="flex justify-between items-start gap-4 mb-2">
@@ -163,7 +226,7 @@ function ChannelCard({ name, description, enabled, onToggle, credentialsOk, onTr
           <div className="display text-3xl">{name}</div>
           <p className="text-ash text-sm mt-2 leading-relaxed">{description}</p>
         </div>
-        <label className="cursor-pointer flex items-center gap-2">
+        <label className="cursor-pointer flex items-center gap-2 shrink-0">
           <span className="font-mono text-[10px] text-ash">{enabled ? 'ON' : 'OFF'}</span>
           <input
             type="checkbox"
@@ -174,12 +237,110 @@ function ChannelCard({ name, description, enabled, onToggle, credentialsOk, onTr
         </label>
       </div>
 
-      {!credentialsOk && (
+      {!credentialsOk && !showCreds && (
         <div className="mt-4 flex items-start gap-3 border border-copper/30 bg-copper/5 p-4">
           <AlertTriangle size={14} className="text-copper-glow shrink-0 mt-0.5" />
-          <div className="text-xs text-cream/85">
-            SFTP credentials missing in <span className="font-mono text-copper">.env</span>.
-            Runs will write feeds locally to <span className="font-mono text-copper">/feeds-output</span> but won't be delivered.
+          <div className="text-xs text-cream/85 flex-1">
+            SFTP credentials not configured. Feeds will be written locally but not delivered.
+          </div>
+          <button
+            onClick={() => setShowCreds(true)}
+            className="text-copper font-mono text-[10px] hover:text-cream shrink-0"
+          >
+            Configure →
+          </button>
+        </div>
+      )}
+
+      {/* SFTP Credentials Toggle */}
+      <button
+        onClick={() => setShowCreds((s) => !s)}
+        className="mt-5 flex items-center gap-2 font-mono text-[10px] text-ash hover:text-cream transition-colors"
+      >
+        <KeyRound size={12} />
+        SFTP Credentials
+        {credentialsOk && <span className="text-copper ml-1">✓ configured</span>}
+        {showCreds ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+      </button>
+
+      {showCreds && (
+        <div className="mt-4 border hairline p-5 space-y-4 bg-ink-700/20">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="field-label">Host</label>
+              <input
+                type="text"
+                className="input-field"
+                placeholder="sftp.example.com"
+                value={creds.host}
+                onChange={(e) => setField('host', e.target.value)}
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <label className="field-label">Port</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                className="input-field"
+                placeholder="22"
+                value={creds.port}
+                onChange={(e) => setField('port', e.target.value)}
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <label className="field-label">Username</label>
+              <input
+                type="text"
+                className="input-field"
+                placeholder="dealer_username"
+                value={creds.user}
+                onChange={(e) => setField('user', e.target.value)}
+                autoComplete="off"
+              />
+            </div>
+            <div>
+              <label className="field-label">Password</label>
+              <input
+                type="password"
+                className="input-field"
+                placeholder={initialCreds.pass ? '••••••••' : 'Enter password'}
+                value={creds.pass}
+                onChange={(e) => setField('pass', e.target.value)}
+                autoComplete="new-password"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="field-label">Remote Path</label>
+              <input
+                type="text"
+                className="input-field"
+                placeholder="/inventory"
+                value={creds.path}
+                onChange={(e) => setField('path', e.target.value)}
+                autoComplete="off"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 pt-2">
+            <button
+              onClick={saveCreds}
+              disabled={credsBusy}
+              className="btn-primary text-xs"
+            >
+              {credsBusy && <Loader2 size={12} className="animate-spin" />}
+              Save Credentials
+            </button>
+            {credsSavedAt && (
+              <span className="font-mono text-[10px] text-copper flex items-center gap-1">
+                <Check size={10} /> Saved
+              </span>
+            )}
+            {credsError && (
+              <span className="font-mono text-[10px] text-copper-glow">{credsError}</span>
+            )}
           </div>
         </div>
       )}

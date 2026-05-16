@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { buildAutoTraderFeed } from './autotrader';
 import { buildCarGurusFeed } from './cargurus';
 import { buildGenericXmlFeed } from './generic';
-import { uploadToSftp, deliveryConfigForChannel } from './sftp';
+import { uploadToSftp, deliveryConfigForChannel, type SftpDbOverrides } from './sftp';
 import type { SyndicationChannel, FeedResult } from './types';
 
 const FEEDS_DIR = path.join(process.cwd(), 'feeds-output');
@@ -22,6 +22,26 @@ async function settingEnabled(channel: SyndicationChannel): Promise<boolean> {
     where: { key: `syndication.${channel}.enabled` }
   });
   return setting?.value === 'true';
+}
+
+async function getSftpDbOverrides(channel: SyndicationChannel): Promise<SftpDbOverrides | undefined> {
+  if (channel === 'generic') return undefined;
+  const keys = [
+    `syndication.${channel}.sftp.host`,
+    `syndication.${channel}.sftp.user`,
+    `syndication.${channel}.sftp.pass`,
+    `syndication.${channel}.sftp.port`,
+    `syndication.${channel}.sftp.path`,
+  ];
+  const settings = await prisma.setting.findMany({ where: { key: { in: keys } } });
+  const map = Object.fromEntries(settings.map((s) => [s.key, s.value]));
+  return {
+    host: map[`syndication.${channel}.sftp.host`],
+    user: map[`syndication.${channel}.sftp.user`],
+    pass: map[`syndication.${channel}.sftp.pass`],
+    port: map[`syndication.${channel}.sftp.port`],
+    path: map[`syndication.${channel}.sftp.path`],
+  };
 }
 
 async function buildFeed(channel: SyndicationChannel): Promise<FeedResult> {
@@ -91,7 +111,8 @@ export async function runSyndicationForChannel(
 
     let remotePath: string | undefined;
     if (channel !== 'generic' && !opts.dryRun) {
-      const cfg = deliveryConfigForChannel(channel);
+      const dbOverrides = await getSftpDbOverrides(channel);
+      const cfg = deliveryConfigForChannel(channel, dbOverrides);
       if (!cfg) {
         // Credentials missing; record success-with-local-only for visibility
         await persistRunSuccess(run.id, localPath);
