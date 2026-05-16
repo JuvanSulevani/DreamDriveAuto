@@ -28,23 +28,11 @@ export default function Header() {
   }, []);
 
   return (
-    <>
-      {/*
-        Permanent solid fill for the iOS Dynamic Island / notch safe area.
-        This sits above the header (z-[51]) so the page never shows through.
-        The header itself is below it (z-50) and may be transparent when at top.
-      */}
-      {/* Always-solid cover for the Dynamic Island / notch area.
-          CSS class used (not inline style) so env() resolves correctly on iOS Safari. */}
-      <div
-        className="safe-area-fill fixed inset-x-0 top-0 bg-ink pointer-events-none z-[51]"
-        aria-hidden="true"
-      />
-      <header
-        className={`safe-area-pt fixed top-0 inset-x-0 z-50 transition-colors duration-300 ${
-          scrolled ? 'bg-ink border-b hairline' : 'bg-transparent'
-        }`}
-      >
+    <header
+      className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ${
+        scrolled ? 'bg-ink border-b hairline' : 'bg-gradient-to-b from-ink/80 via-ink/10 to-transparent'
+      }`}
+    >
       <div className="px-6 lg:px-12 h-20 flex items-center justify-between gap-6">
         {/* Wordmark */}
         <Link href="/" className="group flex items-center gap-3 shrink-0">
@@ -116,6 +104,5 @@ export default function Header() {
         </div>
       )}
     </header>
-    </>
   );
 }
