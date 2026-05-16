@@ -28,12 +28,23 @@ export default function Header() {
   }, []);
 
   return (
-    <header
-      className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ${
-        scrolled ? 'backdrop-blur-md bg-ink/85 border-b hairline' : 'bg-transparent'
-      }`}
-      style={{ paddingTop: 'env(safe-area-inset-top)' }}
-    >
+    <>
+      {/*
+        Permanent solid fill for the iOS Dynamic Island / notch safe area.
+        This sits above the header (z-[51]) so the page never shows through.
+        The header itself is below it (z-50) and may be transparent when at top.
+      */}
+      <div
+        className="fixed inset-x-0 top-0 bg-ink pointer-events-none"
+        style={{ height: 'env(safe-area-inset-top)', zIndex: 51 }}
+        aria-hidden="true"
+      />
+      <header
+        className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ${
+          scrolled ? 'backdrop-blur-md bg-ink/90 border-b hairline' : 'bg-transparent'
+        }`}
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      >
       <div className="px-6 lg:px-12 h-20 flex items-center justify-between gap-6">
         {/* Wordmark */}
         <Link href="/" className="group flex items-center gap-3 shrink-0">
@@ -105,5 +116,6 @@ export default function Header() {
         </div>
       )}
     </header>
+    </>
   );
 }
