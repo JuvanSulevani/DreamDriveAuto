@@ -32,6 +32,7 @@ export default function Header() {
       className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ${
         scrolled ? 'backdrop-blur-md bg-ink/85 border-b hairline' : 'bg-transparent'
       }`}
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="px-6 lg:px-12 h-20 flex items-center justify-between gap-6">
         {/* Wordmark */}
