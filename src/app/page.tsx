@@ -8,7 +8,7 @@ import { ArrowUpRight, ArrowRight } from 'lucide-react';
 import { getSiteSettings } from '@/lib/site-settings-store';
 import { safePublicQuery } from '@/lib/public-query';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export default async function HomePage() {
   const [settings, inventory] = await Promise.all([getSiteSettings(), getHomeInventory()]);
