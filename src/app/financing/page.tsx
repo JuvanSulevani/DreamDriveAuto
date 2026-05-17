@@ -77,7 +77,7 @@ export default function FinancingPage() {
                     <Field label="Email" name="email" type="email" required />
                     <Field label="Phone" name="phone" type="tel" required />
                     <Field label="Date of Birth" name="dob" type="date" required />
-                    <Field label="SSN (last 4)" name="ssn4" maxLength={4} placeholder="••••" />
+                    <Field label="SIN (last 3)" name="sin3" maxLength={3} placeholder="•••" />
                   </Grid>
                 </Section>
 
@@ -85,8 +85,8 @@ export default function FinancingPage() {
                   <Grid>
                     <Field label="Street Address" name="address" required wide />
                     <Field label="City" name="city" required />
-                    <Field label="State" name="state" required />
-                    <Field label="ZIP" name="zip" required />
+                    <Field label="Province" name="province" required />
+                    <Field label="Postal Code" name="postalCode" required />
                     <Select label="Housing" name="housing" options={[
                       { value: 'own', label: 'Own' },
                       { value: 'rent', label: 'Rent' },

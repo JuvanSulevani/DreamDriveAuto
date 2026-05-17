@@ -16,14 +16,14 @@ export default function FinanceCalculator({ priceCents }: { priceCents: number }
     tradeCents: Math.round(trade * 100),
     termMonths: term,
     aprPercent: apr,
-    taxRate: 0.085
+    taxRate: 0.13
   }), [priceCents, down, trade, term, apr]);
 
   return (
     <div className="border hairline">
       <div className="px-6 py-5 border-b hairline flex items-baseline justify-between">
         <div className="eyebrow">Estimated Payment</div>
-        <div className="font-mono text-[10px] text-ash">incl. 8.5% tax</div>
+        <div className="font-mono text-[10px] text-ash">incl. 13% HST</div>
       </div>
 
       <div className="px-6 py-8 text-center border-b hairline">

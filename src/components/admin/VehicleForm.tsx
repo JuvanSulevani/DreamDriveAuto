@@ -38,6 +38,7 @@ export type VehicleInput = {
   serviceRecords: boolean;
   carfaxUrl?: string | null;
   featured: boolean;
+  favourite: boolean;
   photos: Photo[];
 };
 
@@ -52,7 +53,7 @@ const empty: VehicleInput = {
   status: 'available',
   headline: '', description: '', features: '',
   accidentFree: true, oneOwner: false, serviceRecords: false,
-  carfaxUrl: '', featured: false, photos: []
+  carfaxUrl: '', featured: false, favourite: false, photos: []
 };
 
 type Props = { initial?: VehicleInput };
@@ -197,7 +198,7 @@ export default function VehicleForm({ initial }: Props) {
 
       <Section title="Pricing & Status">
         <Grid>
-          <F label="Mileage *"><input type="text" inputMode="numeric" className="input-field" value={String(v.mileage)} onChange={(e) => set('mileage', parseInt(e.target.value, 10) || 0)} required /></F>
+          <F label="Mileage (km) *"><input type="text" inputMode="numeric" className="input-field" value={String(v.mileage)} onChange={(e) => set('mileage', parseInt(e.target.value, 10) || 0)} required /></F>
           <F label="Price (CAD) *"><input type="text" inputMode="decimal" className="input-field" value={v.price === 0 ? '' : String(v.price / 100)} onChange={(e) => set('price', e.target.value ? Math.round(parseFloat(e.target.value) * 100) : 0)} required /></F>
           <F label="MSRP (CAD)"><input type="text" inputMode="decimal" className="input-field" value={v.msrp ? String(v.msrp / 100) : ''} onChange={(e) => set('msrp', e.target.value ? Math.round(parseFloat(e.target.value) * 100) : null)} /></F>
           <F label="Status">
@@ -216,12 +217,13 @@ export default function VehicleForm({ initial }: Props) {
         <F label="Description"><textarea className="input-field resize-none" rows={5} value={v.description ?? ''} onChange={(e) => set('description', e.target.value)} /></F>
         <F label="Features (comma separated)"><textarea className="input-field resize-none" rows={2} value={v.features ?? ''} onChange={(e) => set('features', e.target.value)} placeholder="Apple CarPlay, Heated Seats, Pano Roof" /></F>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-4">
+          <Toggle label="This week's favourite" checked={v.favourite} onChange={(c) => set('favourite', c)} />
           <Toggle label="Featured on home" checked={v.featured} onChange={(c) => set('featured', c)} />
           <Toggle label="One-Owner" checked={v.oneOwner} onChange={(c) => set('oneOwner', c)} />
           <Toggle label="Accident-Free" checked={v.accidentFree} onChange={(c) => set('accidentFree', c)} />
           <Toggle label="Service Records" checked={v.serviceRecords} onChange={(c) => set('serviceRecords', c)} />
         </div>
-        <F label="CarFax URL"><input className="input-field" value={v.carfaxUrl ?? ''} onChange={(e) => set('carfaxUrl', e.target.value)} placeholder="https://www.carfax.com/..." /></F>
+        <F label="CarFax URL"><input className="input-field" value={v.carfaxUrl ?? ''} onChange={(e) => set('carfaxUrl', e.target.value)} placeholder="https://www.carfax.ca/..." /></F>
       </Section>
 
       <Section title={`Photos (${v.photos.length})`}>

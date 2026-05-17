@@ -68,7 +68,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     name: process.env.DEALER_NAME || 'Dream Drive Auto',
     phone: process.env.DEALER_PHONE || '+1 (555) 014-7300',
     email: process.env.DEALER_EMAIL || process.env.LEADS_NOTIFY_TO || 'hello@dreamdriveauto.com',
-    address: process.env.DEALER_ADDRESS || '2200 Mercer St, Seattle, WA 98109',
+    address: process.env.DEALER_ADDRESS || '100 King St W, Toronto, ON M5X 1A9',
     website: process.env.DEALER_WEBSITE || 'https://dreamdriveauto.com',
     hours: [
       { day: 'Monday - Friday', hours: '9:00 - 19:00' },
@@ -85,7 +85,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     heroImageUrl: '',
     featuredEyebrow: '001 - The Selection',
     featuredHeading: "This week's",
-    featuredAccent: 'favorites.',
+    featuredAccent: 'favourites.',
     featuredBody:
       'A small selection of cars in current rotation, chosen for their condition, specification, and the stories they carry.',
     philosophyEyebrow: '002 - Philosophy',

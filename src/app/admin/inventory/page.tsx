@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { formatPrice, formatMiles } from '@/lib/format';
 import { ensureAdmin } from '@/lib/require-admin';
+import FavouriteToggle from '@/components/admin/FavouriteToggle';
 import { Plus } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -72,7 +73,10 @@ export default async function AdminInventoryPage({ searchParams }: { searchParam
               <div className="font-mono text-[10px] text-ash mt-0.5">{v.bodyStyle} · {v.condition}</div>
               <div className="flex items-center justify-between mt-2">
                 <span className="font-mono text-xs text-cream/80">{formatPrice(v.price)}</span>
-                <StatusBadge status={v.status} />
+                <div className="flex items-center gap-2">
+                  <FavouriteToggle vehicleId={v.id} initial={v.favourite} />
+                  <StatusBadge status={v.status} />
+                </div>
               </div>
             </div>
           </Link>
@@ -86,10 +90,11 @@ export default async function AdminInventoryPage({ searchParams }: { searchParam
       <div className="hidden md:block border hairline">
         <div className="grid grid-cols-12 gap-4 px-4 py-3 border-b hairline spec-label">
           <div className="col-span-1">Photo</div>
-          <div className="col-span-4">Vehicle</div>
+          <div className="col-span-3">Vehicle</div>
           <div className="col-span-2">Stock / VIN</div>
           <div className="col-span-1">Mileage</div>
           <div className="col-span-2 text-right">Price</div>
+          <div className="col-span-1 text-center">Fav</div>
           <div className="col-span-2 text-right">Status</div>
         </div>
         {vehicles.map((v) => (
@@ -103,7 +108,7 @@ export default async function AdminInventoryPage({ searchParams }: { searchParam
                 )}
               </div>
             </div>
-            <div className="col-span-4">
+            <div className="col-span-3">
               <div className="text-cream truncate">{v.year} {v.make} {v.model} {v.trim}</div>
               <div className="font-mono text-[10px] text-ash mt-1">{v.bodyStyle} · {v.condition}</div>
             </div>
@@ -113,6 +118,9 @@ export default async function AdminInventoryPage({ searchParams }: { searchParam
             </div>
             <div className="col-span-1 font-mono text-xs">{formatMiles(v.mileage)}</div>
             <div className="col-span-2 text-right font-mono tabular text-cream">{formatPrice(v.price)}</div>
+            <div className="col-span-1 flex justify-center">
+              <FavouriteToggle vehicleId={v.id} initial={v.favourite} />
+            </div>
             <div className="col-span-2 text-right">
               <StatusBadge status={v.status} />
             </div>

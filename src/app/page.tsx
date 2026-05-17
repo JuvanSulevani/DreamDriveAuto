@@ -225,7 +225,7 @@ async function getHomeInventory() {
     async () => {
       const [featured, recent, totalCount] = await Promise.all([
         prisma.vehicle.findMany({
-          where: { status: 'available', featured: true },
+          where: { status: 'available', favourite: true },
           include: { photos: { orderBy: { position: 'asc' } } },
           orderBy: { createdAt: 'desc' },
           take: 4

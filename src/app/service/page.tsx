@@ -15,7 +15,7 @@ export default function ServicePage() {
           Service that <span className="display-italic">respects</span> your car.
         </h1>
         <p className="mt-10 text-ash max-w-2xl text-lg leading-relaxed">
-          We partner with authorized service centers in the Pacific Northwest to keep every car we sell
+          We partner with authorized service centres across the GTA to keep every car we sell
           maintained to factory spec — using the right parts, the right tools, and the right people.
         </p>
 

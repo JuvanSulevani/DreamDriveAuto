@@ -42,6 +42,7 @@ export const VehicleSchema = z.object({
   serviceRecords: z.boolean().default(false),
   carfaxUrl: optionalUrl,
   featured: z.boolean().default(false),
+  favourite: z.boolean().default(false),
   photos: z.array(z.object({
     url: z.string().trim().min(1),
     alt: optionalText,

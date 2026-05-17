@@ -49,6 +49,7 @@ export default async function EditVehiclePage({ params }: { params: Promise<{ id
     serviceRecords: v.serviceRecords,
     carfaxUrl: v.carfaxUrl,
     featured: v.featured,
+    favourite: v.favourite,
     photos: v.photos.map((p) => ({ url: p.url, alt: p.alt }))
   };
 

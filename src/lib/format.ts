@@ -8,14 +8,14 @@ export const formatPrice = (cents: number | null | undefined) => {
   }).format(cents / 100).replace(/^\$/, 'CA$');
 };
 
-export const formatMiles = (miles: number | null | undefined) => {
-  if (miles == null) return '—';
-  return new Intl.NumberFormat('en-US').format(miles) + ' mi';
+export const formatMiles = (km: number | null | undefined) => {
+  if (km == null) return '—';
+  return new Intl.NumberFormat('en-CA').format(km) + ' km';
 };
 
 export const formatNumber = (n: number | null | undefined) => {
   if (n == null) return '—';
-  return new Intl.NumberFormat('en-US').format(n);
+  return new Intl.NumberFormat('en-CA').format(n);
 };
 
 export const slugify = (s: string) =>

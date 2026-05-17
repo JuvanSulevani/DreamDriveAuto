@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
         serviceRecords: data.serviceRecords,
         carfaxUrl: data.carfaxUrl,
         featured: data.featured,
+        favourite: data.favourite,
         photos: {
           create: data.photos.map((p, i) => ({
             url: p.url,
