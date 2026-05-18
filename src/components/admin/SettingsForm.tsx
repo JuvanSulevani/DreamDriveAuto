@@ -112,6 +112,27 @@ function Field({
   onChange: (value: string) => void;
 }) {
   const wide = field.input === 'textarea' || field.input === 'image';
+
+  if (field.input === 'boolean') {
+    const checked = value === 'true';
+    return (
+      <div>
+        <label className="flex items-start gap-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={(e) => onChange(e.target.checked ? 'true' : 'false')}
+            className="accent-copper w-4 h-4 mt-1"
+          />
+          <span className="flex-1">
+            <span className="block text-cream text-sm">{field.label}</span>
+            {field.help && <span className="block text-ash text-xs mt-1 leading-relaxed">{field.help}</span>}
+          </span>
+        </label>
+      </div>
+    );
+  }
+
   return (
     <div className={wide ? 'md:col-span-2' : ''}>
       <label className="field-label">{field.label}</label>
@@ -132,6 +153,7 @@ function Field({
           onChange={(event) => onChange(event.target.value)}
         />
       )}
+      {field.help && <p className="text-ash text-xs mt-2 leading-relaxed">{field.help}</p>}
     </div>
   );
 }

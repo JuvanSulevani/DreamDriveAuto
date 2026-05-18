@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { getSiteSettings } from '@/lib/site-settings-store';
@@ -7,7 +8,8 @@ export const metadata = { title: 'About' };
 export const dynamic = 'force-dynamic';
 
 export default async function AboutPage() {
-  const { about } = await getSiteSettings();
+  const { about, pages } = await getSiteSettings();
+  if (!pages.aboutVisible) notFound();
 
   return (
     <>

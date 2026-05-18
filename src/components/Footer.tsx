@@ -4,7 +4,14 @@ import Link from 'next/link';
 import { useSiteSettings } from '@/lib/use-site-settings';
 
 export default function Footer() {
-  const { dealer, footer } = useSiteSettings();
+  const { dealer, footer, pages } = useSiteSettings();
+
+  const services = [
+    pages.financingVisible && { href: '/financing', label: 'Financing' },
+    pages.tradeInVisible && { href: '/trade-in', label: 'Trade Appraisal' },
+    pages.sellVisible && { href: '/sell', label: 'Sell Your Car' },
+    pages.serviceVisible && { href: '/service', label: 'Service' }
+  ].filter((x): x is { href: string; label: string } => Boolean(x));
 
   return (
     <footer className="border-t hairline mt-32">
@@ -50,15 +57,18 @@ export default function Footer() {
             </ul>
           </div>
 
-          <div className="md:col-span-2">
-            <div className="eyebrow mb-6">Services</div>
-            <ul className="space-y-3 text-sm">
-              <li><Link className="hover:text-copper" href="/financing">Financing</Link></li>
-              <li><Link className="hover:text-copper" href="/trade-in">Trade Appraisal</Link></li>
-              <li><Link className="hover:text-copper" href="/sell">Sell Your Car</Link></li>
-              <li><Link className="hover:text-copper" href="/service">Service</Link></li>
-            </ul>
-          </div>
+          {services.length > 0 && (
+            <div className="md:col-span-2">
+              <div className="eyebrow mb-6">Services</div>
+              <ul className="space-y-3 text-sm">
+                {services.map((s) => (
+                  <li key={s.href}>
+                    <Link className="hover:text-copper" href={s.href}>{s.label}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         <div className="border-t hairline mt-20 pt-8 flex flex-col md:flex-row justify-between items-start gap-4">

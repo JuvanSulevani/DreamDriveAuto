@@ -12,8 +12,15 @@ export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
   const [settings, inventory] = await Promise.all([getSiteSettings(), getHomeInventory()]);
-  const { home, dealer } = settings;
+  const { home, dealer, pages } = settings;
   const { featured, recent, totalCount } = inventory;
+
+  const serviceCards = [
+    pages.financingVisible && { href: '/financing', title: 'Financing', body: 'Pre-approval in minutes. Multi-lender.' },
+    pages.tradeInVisible && { href: '/trade-in', title: 'Trade-In', body: 'Honest appraisal in 24 hours.' },
+    pages.sellVisible && { href: '/sell', title: 'Sell Yours', body: 'We buy outright. Cash offers.' },
+    pages.serviceVisible && { href: '/service', title: 'Service', body: 'Authorized partners, factory parts.' }
+  ].filter((c): c is { href: string; title: string; body: string } => Boolean(c));
 
   const heroVehicle = featured[0] ?? recent[0];
   const heroPhoto = home.heroImageUrl || heroVehicle?.photos[0]?.url;
@@ -158,14 +165,25 @@ export default async function HomePage() {
       </section>
 
       {/* SERVICES STRIP */}
-      <section className="px-6 lg:px-12 py-24 border-t hairline">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-ink-500">
-          <ServiceCard href="/financing" title="Financing" body="Pre-approval in minutes. Multi-lender."  />
-          <ServiceCard href="/trade-in" title="Trade-In" body="Honest appraisal in 24 hours." />
-          <ServiceCard href="/sell" title="Sell Yours" body="We buy outright. Cash offers." />
-          <ServiceCard href="/service" title="Service" body="Authorized partners, factory parts." />
-        </div>
-      </section>
+      {serviceCards.length > 0 && (
+        <section className="px-6 lg:px-12 py-24 border-t hairline">
+          <div
+            className={
+              // Static class lookup so Tailwind's purger keeps each variant.
+              ({
+                1: 'grid grid-cols-1 gap-px bg-ink-500',
+                2: 'grid grid-cols-1 md:grid-cols-2 gap-px bg-ink-500',
+                3: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-ink-500',
+                4: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-ink-500'
+              } as Record<number, string>)[serviceCards.length] ?? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px bg-ink-500'
+            }
+          >
+            {serviceCards.map((c) => (
+              <ServiceCard key={c.href} href={c.href} title={c.title} body={c.body} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* RECENT ADDITIONS */}
       <section className="px-6 lg:px-12 pt-32 pb-12">

@@ -1,9 +1,15 @@
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { ArrowRight } from 'lucide-react';
+import { getSiteSettings } from '@/lib/site-settings-store';
 
-export default function SellPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function SellPage() {
+  const { pages } = await getSiteSettings();
+  if (!pages.sellVisible) notFound();
   return (
     <>
       <Header />

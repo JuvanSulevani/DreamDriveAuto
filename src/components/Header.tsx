@@ -5,20 +5,23 @@ import { useState, useEffect } from 'react';
 import { Menu, X, Phone } from 'lucide-react';
 import { useSiteSettings } from '@/lib/use-site-settings';
 
-const NAV = [
+type NavItem = { href: string; label: string; visibilityKey?: 'financingVisible' | 'tradeInVisible' | 'sellVisible' | 'serviceVisible' | 'aboutVisible' };
+
+const NAV: NavItem[] = [
   { href: '/inventory', label: 'Inventory' },
-  { href: '/financing', label: 'Financing' },
-  { href: '/trade-in', label: 'Trade-In' },
-  { href: '/sell', label: 'Sell Yours' },
-  { href: '/service', label: 'Service' },
-  { href: '/about', label: 'About' },
+  { href: '/financing', label: 'Financing', visibilityKey: 'financingVisible' },
+  { href: '/trade-in', label: 'Trade-In', visibilityKey: 'tradeInVisible' },
+  { href: '/sell', label: 'Sell Yours', visibilityKey: 'sellVisible' },
+  { href: '/service', label: 'Service', visibilityKey: 'serviceVisible' },
+  { href: '/about', label: 'About', visibilityKey: 'aboutVisible' },
   { href: '/contact', label: 'Contact' }
 ];
 
 export default function Header() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { dealer } = useSiteSettings();
+  const { dealer, pages } = useSiteSettings();
+  const visibleNav = NAV.filter((n) => !n.visibilityKey || pages[n.visibilityKey]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -46,7 +49,7 @@ export default function Header() {
 
         {/* Desktop nav */}
         <nav className="hidden lg:flex items-center gap-8">
-          {NAV.map((n) => (
+          {visibleNav.map((n) => (
             <Link
               key={n.href}
               href={n.href}
@@ -84,7 +87,7 @@ export default function Header() {
       {open && (
         <div className="lg:hidden border-t hairline bg-ink/95 backdrop-blur-md">
           <nav className="flex flex-col px-6 py-8 gap-6">
-            {NAV.map((n) => (
+            {visibleNav.map((n) => (
               <Link
                 key={n.href}
                 href={n.href}

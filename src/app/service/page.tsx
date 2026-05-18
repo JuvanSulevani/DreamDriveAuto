@@ -1,11 +1,17 @@
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { ArrowRight } from 'lucide-react';
+import { getSiteSettings } from '@/lib/site-settings-store';
 
 export const metadata = { title: 'Service' };
+export const dynamic = 'force-dynamic';
 
-export default function ServicePage() {
+export default async function ServicePage() {
+  const { pages } = await getSiteSettings();
+  if (!pages.serviceVisible) notFound();
+
   return (
     <>
       <Header />

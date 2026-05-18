@@ -53,14 +53,22 @@ export type SiteSettings = {
   footer: {
     tagline: string;
   };
+  pages: {
+    financingVisible: boolean;
+    tradeInVisible: boolean;
+    sellVisible: boolean;
+    serviceVisible: boolean;
+    aboutVisible: boolean;
+  };
 };
 
 export type SiteSettingField = {
   key: string;
   group: string;
   label: string;
-  input: 'text' | 'textarea' | 'email' | 'tel' | 'url' | 'image';
+  input: 'text' | 'textarea' | 'email' | 'tel' | 'url' | 'image' | 'boolean';
   rows?: number;
+  help?: string;
 };
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
@@ -129,6 +137,13 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   footer: {
     tagline:
       'A boutique showroom for vehicles worth keeping. By appointment. No pressure. No haggling. Just well-sourced cars.'
+  },
+  pages: {
+    financingVisible: true,
+    tradeInVisible: true,
+    sellVisible: true,
+    serviceVisible: true,
+    aboutVisible: true
   }
 };
 
@@ -181,13 +196,28 @@ export const SITE_SETTING_FIELDS: SiteSettingField[] = [
   { key: 'contact.heading', group: 'Contact page', label: 'Heading', input: 'text' },
   { key: 'contact.headingAccent', group: 'Contact page', label: 'Heading accent', input: 'text' },
   { key: 'contact.intro', group: 'Contact page', label: 'Intro copy', input: 'textarea', rows: 4 },
-  { key: 'footer.tagline', group: 'Footer', label: 'Footer tagline', input: 'textarea', rows: 3 }
+  { key: 'footer.tagline', group: 'Footer', label: 'Footer tagline', input: 'textarea', rows: 3 },
+  { key: 'pages.financingVisible', group: 'Page visibility', label: 'Show Financing page', input: 'boolean', help: 'When off: hidden from nav, footer, and sitemap; the URL returns 404.' },
+  { key: 'pages.tradeInVisible', group: 'Page visibility', label: 'Show Trade-In page', input: 'boolean', help: 'When off: hidden from nav, footer, and sitemap; the URL returns 404.' },
+  { key: 'pages.sellVisible', group: 'Page visibility', label: 'Show Sell page', input: 'boolean', help: 'When off: hidden from nav, footer, and sitemap; the URL returns 404.' },
+  { key: 'pages.serviceVisible', group: 'Page visibility', label: 'Show Service page', input: 'boolean', help: 'When off: hidden from nav, footer, and sitemap; the URL returns 404.' },
+  { key: 'pages.aboutVisible', group: 'Page visibility', label: 'Show About page', input: 'boolean', help: 'When off: hidden from nav, footer, and sitemap; the URL returns 404.' }
 ];
 
 export const SITE_SETTING_KEYS = new Set(SITE_SETTING_FIELDS.map((field) => field.key));
 
-export function flattenSiteSettings(settings: SiteSettings = DEFAULT_SITE_SETTINGS) {
-  return Object.fromEntries(SITE_SETTING_FIELDS.map((field) => [field.key, readPath(settings, field.key)]));
+const FIELD_BY_KEY = new Map(SITE_SETTING_FIELDS.map((field) => [field.key, field]));
+
+export function flattenSiteSettings(settings: SiteSettings = DEFAULT_SITE_SETTINGS): Record<string, string> {
+  return Object.fromEntries(
+    SITE_SETTING_FIELDS.map((field) => {
+      const value = readPath(settings, field.key);
+      // Booleans live in the typed model but serialise to "true"/"false" strings
+      // for both DB storage and the admin form.
+      if (typeof value === 'boolean') return [field.key, value ? 'true' : 'false'];
+      return [field.key, value == null ? '' : String(value)];
+    })
+  );
 }
 
 export function mergeSiteSettings(overrides: Record<string, string | null | undefined> = {}): SiteSettings {
@@ -195,7 +225,7 @@ export function mergeSiteSettings(overrides: Record<string, string | null | unde
 
   for (const field of SITE_SETTING_FIELDS) {
     const value = overrides[field.key];
-    if (value != null) setPath(next, field.key, value);
+    if (value != null) setPath(next, field.key, value, field.input);
   }
 
   return next;
@@ -205,15 +235,19 @@ function cloneSettings(settings: SiteSettings): SiteSettings {
   return JSON.parse(JSON.stringify(settings)) as SiteSettings;
 }
 
-function readPath(source: SiteSettings, path: string) {
+function readPath(source: SiteSettings, path: string): unknown {
   return path.split('.').reduce<unknown>((value, part) => {
     if (value == null) return '';
     if (Array.isArray(value)) return value[Number(part)];
     return (value as Record<string, unknown>)[part];
-  }, source) as string;
+  }, source);
 }
 
-function setPath(target: SiteSettings, path: string, value: string) {
+function setPath(target: SiteSettings, path: string, value: string, input?: SiteSettingField['input']) {
+  // Boolean fields ship in/out as "true"/"false" strings but live as real booleans
+  // on the typed SiteSettings tree. Default treats anything other than "true" as false.
+  const coerced: unknown = input === 'boolean' ? value === 'true' : value;
+
   const parts = path.split('.');
   let cursor: unknown = target;
 
@@ -224,6 +258,10 @@ function setPath(target: SiteSettings, path: string, value: string) {
   }
 
   const leaf = parts[parts.length - 1];
-  if (Array.isArray(cursor)) cursor[Number(leaf)] = value as never;
-  else (cursor as Record<string, unknown>)[leaf] = value;
+  if (Array.isArray(cursor)) cursor[Number(leaf)] = coerced as never;
+  else (cursor as Record<string, unknown>)[leaf] = coerced;
+}
+
+export function getSiteSettingField(key: string) {
+  return FIELD_BY_KEY.get(key);
 }
