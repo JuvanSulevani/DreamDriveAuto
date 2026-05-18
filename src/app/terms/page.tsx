@@ -2,6 +2,8 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
 export const metadata = { title: 'Terms' };
+// Dynamic so the header nav always reflects current page-visibility settings.
+export const dynamic = 'force-dynamic';
 
 export default function TermsPage() {
   return (

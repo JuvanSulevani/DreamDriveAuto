@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { Fraunces, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { DEALER } from '@/lib/dealer';
+import { getSiteSettings } from '@/lib/site-settings-store';
+import { SiteSettingsProvider } from '@/lib/use-site-settings';
 
 const fraunces = Fraunces({
   subsets: ['latin'],
@@ -45,7 +47,14 @@ export const viewport = {
   viewportFit: 'cover'
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Fetch settings once per request server-side. The provider injects the same
+  // value into the SSR pass and the client hydration, so Header/Footer never
+  // flash through the defaults before the page-visibility flags load.
+  // getSiteSettings is wrapped in React.cache() so pages that also call it
+  // (home, vehicle detail, etc.) reuse this fetch within the same request.
+  const settings = await getSiteSettings();
+
   return (
     <html
       lang="en"
@@ -57,7 +66,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       }}
     >
       <body className="bg-ink text-cream font-sans antialiased">
-        {children}
+        <SiteSettingsProvider value={settings}>
+          {children}
+        </SiteSettingsProvider>
       </body>
     </html>
   );

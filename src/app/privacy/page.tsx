@@ -3,6 +3,8 @@ import Footer from '@/components/Footer';
 import { DEALER } from '@/lib/dealer';
 
 export const metadata = { title: 'Privacy Policy' };
+// Dynamic so the header nav always reflects current page-visibility settings.
+export const dynamic = 'force-dynamic';
 
 export default function PrivacyPage() {
   return (

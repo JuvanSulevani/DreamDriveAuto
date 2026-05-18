@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { prisma } from './prisma';
 import {
   DEFAULT_SITE_SETTINGS,
@@ -16,14 +17,16 @@ export async function getSavedSiteSettingMap() {
   return Object.fromEntries(settings.map((setting) => [setting.key, setting.value]));
 }
 
-export async function getSiteSettings() {
+// Wrapped in React.cache() so calls from the root layout, individual pages,
+// and the sitemap all share a single DB read per server request.
+export const getSiteSettings = cache(async function getSiteSettings() {
   try {
     return mergeSiteSettings(await getSavedSiteSettingMap());
   } catch (error) {
     console.error('[site-settings] falling back to defaults', error);
     return DEFAULT_SITE_SETTINGS;
   }
-}
+});
 
 export async function getEditableSiteSettings() {
   const settings = await getSiteSettings();
