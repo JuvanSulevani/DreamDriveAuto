@@ -35,6 +35,10 @@ export default function Header() {
       className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ${
         scrolled ? 'bg-ink border-b hairline' : 'bg-gradient-to-b from-ink/80 via-ink/10 to-transparent'
       }`}
+      // Extend the header's background up into the iOS safe area (Dynamic Island / notch)
+      // so page content can never scroll up behind the status bar. The bg colour fills the
+      // padding region automatically; inner content stays at h-20 below the padding.
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
       <div className="px-6 lg:px-12 h-20 flex items-center justify-between gap-6">
         {/* Wordmark */}

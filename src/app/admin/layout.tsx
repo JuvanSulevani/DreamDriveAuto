@@ -14,7 +14,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <div className="min-h-screen bg-ink">
           <AdminNav />
           <div className="lg:ml-64 min-h-screen">
-            <main className="pt-14 lg:pt-0 p-6 lg:p-10">{children}</main>
+            {/* On mobile the admin nav is `56px + safe-area-inset-top`; on lg+ it's a sidebar. */}
+            <main className="pt-[calc(3.5rem+env(safe-area-inset-top))] lg:pt-0 p-6 lg:p-10">{children}</main>
           </div>
         </div>
       ) : (

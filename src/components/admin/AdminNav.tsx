@@ -57,25 +57,36 @@ export default function AdminNav() {
       </aside>
 
       {/* ── Mobile top bar (< lg) ── */}
-      <div className="lg:hidden fixed top-0 inset-x-0 h-14 bg-ink border-b hairline z-30 flex items-center justify-between px-4">
-        <Link href="/" className="block">
-          <div className="display text-xl tracking-tightest leading-none">
-            Dream<span className="display-italic text-copper"> Drive</span>
-          </div>
-          <div className="eyebrow text-[8px] mt-0.5 text-ash">Admin</div>
-        </Link>
-        <button
-          aria-label={drawerOpen ? 'Close menu' : 'Open menu'}
-          onClick={() => setDrawerOpen(!drawerOpen)}
-          className="text-cream"
-        >
-          {drawerOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
+      {/* Outer wrapper carries the bg + safe-area padding so the dark fill
+          extends behind the iOS Dynamic Island. Inner row keeps the 56px content height. */}
+      <div
+        className="lg:hidden fixed top-0 inset-x-0 bg-ink border-b hairline z-30"
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      >
+        <div className="h-14 flex items-center justify-between px-4">
+          <Link href="/" className="block">
+            <div className="display text-xl tracking-tightest leading-none">
+              Dream<span className="display-italic text-copper"> Drive</span>
+            </div>
+            <div className="eyebrow text-[8px] mt-0.5 text-ash">Admin</div>
+          </Link>
+          <button
+            aria-label={drawerOpen ? 'Close menu' : 'Open menu'}
+            onClick={() => setDrawerOpen(!drawerOpen)}
+            className="text-cream"
+          >
+            {drawerOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
       </div>
 
       {/* ── Mobile drawer overlay ── */}
       {drawerOpen && (
-        <div className="lg:hidden fixed inset-0 z-20 bg-ink/95 backdrop-blur flex flex-col pt-14">
+        <div
+          className="lg:hidden fixed inset-0 z-20 bg-ink/95 backdrop-blur flex flex-col"
+          // Clear both the 56px top bar and the iOS safe-area above it.
+          style={{ paddingTop: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}
+        >
           <nav className="flex-1 flex flex-col px-6 py-8 gap-2">
             {items.map((it) => {
               const active = it.exact ? pathname === it.href : pathname.startsWith(it.href);
