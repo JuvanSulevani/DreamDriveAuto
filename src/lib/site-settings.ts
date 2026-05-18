@@ -60,6 +60,18 @@ export type SiteSettings = {
     serviceVisible: boolean;
     aboutVisible: boolean;
   };
+  legal: {
+    privacy: {
+      eyebrow: string;
+      heading: string;
+      body: string;
+    };
+    terms: {
+      eyebrow: string;
+      heading: string;
+      body: string;
+    };
+  };
 };
 
 export type SiteSettingField = {
@@ -144,6 +156,30 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
     sellVisible: true,
     serviceVisible: true,
     aboutVisible: true
+  },
+  legal: {
+    privacy: {
+      eyebrow: 'Privacy',
+      heading: 'Privacy Policy',
+      body:
+        'We respect your privacy. This policy describes what information we collect, how we use it, and the choices you have.\n\n' +
+        '## Information We Collect\n\n' +
+        'We collect information you provide directly — through inquiry forms, financing applications, trade appraisals — and limited technical information automatically when you visit (IP address, browser type, pages viewed).\n\n' +
+        '## How We Use It\n\n' +
+        'To respond to your inquiries, evaluate financing applications, and improve our services. Financial information is shared only with lenders you authorize.\n\n' +
+        '## Sharing\n\n' +
+        'We do not sell your personal information. We may disclose it as required by law or to service providers acting on our behalf (lenders, payment processors, hosting).\n\n' +
+        '## Your Rights\n\n' +
+        'You may request access, correction, or deletion of your personal information. Contact us at the address below.'
+    },
+    terms: {
+      eyebrow: 'Terms',
+      heading: 'Terms of Use',
+      body:
+        'Vehicle pricing on this site is subject to change. While we make every effort to ensure accuracy, errors do occur. Final price is determined at the time of sale and confirmed by an authorized representative.\n\n' +
+        'Vehicle availability shown on this site reflects our best understanding at the time of your visit and is not guaranteed. Photographs are representative and may show optional equipment.\n\n' +
+        'Estimated payments shown are for illustrative purposes only and do not constitute an offer to lend. Actual terms depend on creditworthiness and lender approval.'
+    }
   }
 };
 
@@ -201,7 +237,13 @@ export const SITE_SETTING_FIELDS: SiteSettingField[] = [
   { key: 'pages.tradeInVisible', group: 'Page visibility', label: 'Show Trade-In page', input: 'boolean', help: 'When off: hidden from nav, footer, and sitemap; the URL returns 404.' },
   { key: 'pages.sellVisible', group: 'Page visibility', label: 'Show Sell page', input: 'boolean', help: 'When off: hidden from nav, footer, and sitemap; the URL returns 404.' },
   { key: 'pages.serviceVisible', group: 'Page visibility', label: 'Show Service page', input: 'boolean', help: 'When off: hidden from nav, footer, and sitemap; the URL returns 404.' },
-  { key: 'pages.aboutVisible', group: 'Page visibility', label: 'Show About page', input: 'boolean', help: 'When off: hidden from nav, footer, and sitemap; the URL returns 404.' }
+  { key: 'pages.aboutVisible', group: 'Page visibility', label: 'Show About page', input: 'boolean', help: 'When off: hidden from nav, footer, and sitemap; the URL returns 404.' },
+  { key: 'legal.privacy.eyebrow', group: 'Privacy Policy page', label: 'Eyebrow', input: 'text' },
+  { key: 'legal.privacy.heading', group: 'Privacy Policy page', label: 'Heading', input: 'text' },
+  { key: 'legal.privacy.body', group: 'Privacy Policy page', label: 'Body', input: 'textarea', rows: 16, help: 'Separate paragraphs with a blank line. Lines that start with "## " become subheadings.' },
+  { key: 'legal.terms.eyebrow', group: 'Terms of Use page', label: 'Eyebrow', input: 'text' },
+  { key: 'legal.terms.heading', group: 'Terms of Use page', label: 'Heading', input: 'text' },
+  { key: 'legal.terms.body', group: 'Terms of Use page', label: 'Body', input: 'textarea', rows: 14, help: 'Separate paragraphs with a blank line. Lines that start with "## " become subheadings.' }
 ];
 
 export const SITE_SETTING_KEYS = new Set(SITE_SETTING_FIELDS.map((field) => field.key));
