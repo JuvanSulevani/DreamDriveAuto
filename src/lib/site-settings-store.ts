@@ -1,6 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import { prisma } from './prisma';
+import { retryTransient } from './public-query';
 import {
   DEFAULT_SITE_SETTINGS,
   SITE_SETTING_FIELDS,
@@ -19,9 +20,13 @@ export async function getSavedSiteSettingMap() {
 
 // Wrapped in React.cache() so calls from the root layout, individual pages,
 // and the sitemap all share a single DB read per server request.
+// This is the FIRST db read of every request (from the layout), so wrapping
+// it in retryTransient absorbs the Aurora Serverless v2 wake-up window
+// (15-30s) for the whole request — subsequent queries on the now-warm DB
+// won't need to wait again.
 export const getSiteSettings = cache(async function getSiteSettings() {
   try {
-    return mergeSiteSettings(await getSavedSiteSettingMap());
+    return mergeSiteSettings(await retryTransient('site-settings', getSavedSiteSettingMap));
   } catch (error) {
     console.error('[site-settings] falling back to defaults', error);
     return DEFAULT_SITE_SETTINGS;
