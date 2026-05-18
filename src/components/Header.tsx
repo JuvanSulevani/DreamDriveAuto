@@ -31,16 +31,29 @@ export default function Header() {
   }, []);
 
   return (
-    <header
-      className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ${
-        scrolled ? 'bg-ink border-b hairline' : 'bg-gradient-to-b from-ink/80 via-ink/10 to-transparent'
-      }`}
-      // Extend the header's background up into the iOS safe area (Dynamic Island / notch)
-      // so page content can never scroll up behind the status bar. The bg colour fills the
-      // padding region automatically; inner content stays at h-20 below the padding.
-      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
-    >
-      <div className="px-6 lg:px-12 h-20 flex items-center justify-between gap-6">
+    <header className="fixed top-0 inset-x-0 z-50">
+      {/*
+        Always-solid bar covering ONLY the iOS safe area (Dynamic Island / notch).
+        Previous attempt used padding-top + the gradient bg on the header itself —
+        but the gradient is `from-ink/80 ... to-transparent`, so the top region was
+        only ~80% opaque at best (and faded fast). Page content scrolled up behind
+        the status bar showed through. Splitting the safe-area filler out as its
+        own element with solid bg-ink makes that region bulletproof regardless of
+        whether the bar below is gradient or solid.
+      */}
+      <div
+        className="bg-ink"
+        style={{ height: 'env(safe-area-inset-top, 0px)' }}
+        aria-hidden="true"
+      />
+
+      {/* Main visible bar — keeps the original gradient/solid scroll behaviour. */}
+      <div
+        className={`transition-all duration-500 ${
+          scrolled ? 'bg-ink border-b hairline' : 'bg-gradient-to-b from-ink/80 via-ink/10 to-transparent'
+        }`}
+      >
+        <div className="px-6 lg:px-12 h-20 flex items-center justify-between gap-6">
         {/* Wordmark */}
         <Link href="/" className="group flex items-center gap-3 shrink-0">
           <div className="relative">
@@ -85,6 +98,7 @@ export default function Header() {
         >
           {open ? <X size={22} /> : <Menu size={22} />}
         </button>
+        </div>
       </div>
 
       {/* Mobile drawer */}
