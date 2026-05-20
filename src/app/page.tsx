@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma';
 import { ArrowUpRight, ArrowRight } from 'lucide-react';
 import { getSiteSettings } from '@/lib/site-settings-store';
 import { safePublicQuery } from '@/lib/public-query';
+import { readSnapshot, reviveVehicle } from '@/lib/snapshot';
 
 export const dynamic = 'force-dynamic';
 
@@ -259,7 +260,22 @@ async function getHomeInventory() {
 
       return { featured, recent, totalCount };
     },
-    { featured: [], recent: [], totalCount: 0 }
+    { featured: [], recent: [], totalCount: 0 },
+    async () => {
+      // DB paused/down — serve from the S3 snapshot. The snapshot is sorted
+      // by createdAt desc and contains every non-hidden vehicle, so we just
+      // filter to 'available' and slice the same way the live query does.
+      const snap = await readSnapshot();
+      if (!snap) return null;
+      const available = snap.vehicles
+        .filter((v) => v.status === 'available')
+        .map(reviveVehicle);
+      return {
+        featured: available.filter((v) => v.favourite).slice(0, 4),
+        recent: available.slice(0, 8),
+        totalCount: available.length
+      };
+    }
   );
 }
 

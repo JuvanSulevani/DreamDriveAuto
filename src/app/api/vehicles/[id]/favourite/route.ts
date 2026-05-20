@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
+import { writeSnapshot } from '@/lib/snapshot';
 
 export const runtime = 'nodejs';
 
@@ -19,6 +20,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     data: { favourite },
     select: { id: true, favourite: true }
   });
+  await writeSnapshot();
 
   return NextResponse.json({ vehicle });
 }

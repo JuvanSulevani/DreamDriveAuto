@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 import { slugify } from '@/lib/format';
 import { parseVehicleInput } from '@/lib/vehicle-validation';
+import { writeSnapshot } from '@/lib/snapshot';
 
 export const runtime = 'nodejs';
 
@@ -82,6 +83,7 @@ export async function POST(req: NextRequest) {
       },
       include: { photos: true }
     });
+    await writeSnapshot();
     return NextResponse.json({ vehicle });
   } catch (e) {
     if (e instanceof z.ZodError) {

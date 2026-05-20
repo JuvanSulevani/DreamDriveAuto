@@ -11,6 +11,7 @@ import { formatPrice, formatMiles, conditionLabel } from '@/lib/format';
 import { DEALER } from '@/lib/dealer';
 import { getSiteSettings } from '@/lib/site-settings-store';
 import { safePublicQuery } from '@/lib/public-query';
+import { readSnapshot, reviveVehicle } from '@/lib/snapshot';
 import { Phone, MapPin, ShieldCheck, FileText, ChevronLeft } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const v = await safePublicQuery(
     'vehicle.metadata',
     () => prisma.vehicle.findUnique({ where: { slug } }),
-    null
+    null,
+    async () => {
+      const snap = await readSnapshot();
+      const match = snap?.vehicles.find((x) => x.slug === slug);
+      return match ? reviveVehicle(match) : null;
+    }
   );
   if (!v) return { title: 'Vehicle not found' };
   return {
@@ -38,7 +44,13 @@ export default async function VehiclePage({ params }: { params: Promise<{ slug: 
       where: { slug },
       include: { photos: { orderBy: { position: 'asc' } } }
     }),
-    null
+    null,
+    async () => {
+      // DB paused — pull the vehicle (with its photos) from the snapshot.
+      const snap = await readSnapshot();
+      const match = snap?.vehicles.find((x) => x.slug === slug);
+      return match ? reviveVehicle(match) : null;
+    }
   );
 
   if (!v || v.status === 'hidden') notFound();
@@ -55,7 +67,17 @@ export default async function VehiclePage({ params }: { params: Promise<{ slug: 
       orderBy: { createdAt: 'desc' },
       take: 4
     }),
-    []
+    [],
+    async () => {
+      // If the detail call fell back to the snapshot, this almost certainly
+      // will too — keep the "Adjacent" rail populated instead of empty.
+      const snap = await readSnapshot();
+      if (!snap) return null;
+      return snap.vehicles
+        .filter((x) => x.status === 'available' && x.bodyStyle === v.bodyStyle && x.id !== v.id)
+        .slice(0, 4)
+        .map(reviveVehicle);
+    }
   );
 
   const features = (v.features || '').split(',').map((s) => s.trim()).filter(Boolean);

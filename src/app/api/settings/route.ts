@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 import { SITE_SETTING_KEYS } from '@/lib/site-settings';
+import { writeSnapshot } from '@/lib/snapshot';
 
 export const runtime = 'nodejs';
 
@@ -35,6 +36,9 @@ export async function PUT(req: NextRequest) {
         create: { key: u.key, value: u.value }
       });
     }
+    // Refresh the S3 snapshot so it reflects the just-saved values. Errors
+    // are swallowed inside writeSnapshot — the DB write already succeeded.
+    await writeSnapshot();
     return NextResponse.json({ ok: true });
   } catch (e) {
     if (e instanceof z.ZodError) {

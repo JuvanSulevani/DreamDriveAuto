@@ -53,15 +53,36 @@ export async function retryTransient<T>(label: string, query: () => Promise<T>):
   throw new Error(`retryTransient(${label}): exhausted retries`);
 }
 
+/**
+ * Run `query` with transient-error retry. If retry exhausts and a
+ * `snapshotFallback` is provided, try that — typically a function that pulls
+ * the same shape of data from an S3 snapshot. Only after both fail does the
+ * caller-provided empty `fallback` get returned.
+ *
+ * Order: retry RDS → snapshot → empty placeholder.
+ */
 export async function safePublicQuery<T>(
   label: string,
   query: () => Promise<T>,
-  fallback: T
+  fallback: T,
+  snapshotFallback?: () => Promise<T | null>
 ): Promise<T> {
   try {
     return await retryTransient(label, query);
   } catch (error) {
-    console.error(`[public-query] ${label} failed; rendering fallback content.`, error);
+    console.error(`[public-query] ${label} db query failed`, error);
+    if (snapshotFallback) {
+      try {
+        const fromSnapshot = await snapshotFallback();
+        if (fromSnapshot != null) {
+          console.log(`[public-query] ${label} served from snapshot`);
+          return fromSnapshot;
+        }
+      } catch (snapshotError) {
+        console.error(`[public-query] ${label} snapshot fallback failed`, snapshotError);
+      }
+    }
+    console.error(`[public-query] ${label} falling back to empty placeholder`);
     return fallback;
   }
 }

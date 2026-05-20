@@ -5,6 +5,7 @@ import InventoryFilters from '@/components/InventoryFilters';
 import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
 import { safePublicQuery } from '@/lib/public-query';
+import { readSnapshot, reviveVehicle, type SnapshotVehicle } from '@/lib/snapshot';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,7 +71,20 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
 
       return { vehicles, total, makes, bodyStyles };
     },
-    { vehicles: [], total: 0, makes: [], bodyStyles: [] }
+    { vehicles: [], total: 0, makes: [], bodyStyles: [] },
+    async () => {
+      // DB unavailable — apply the same filter/sort against the S3 snapshot.
+      const snap = await readSnapshot();
+      if (!snap) return null;
+      const available = snap.vehicles
+        .filter((v) => v.status === 'available')
+        .map(reviveVehicle);
+      const filtered = filterVehiclesForListing(available, params);
+      const sorted = sortVehiclesForListing(filtered, params.sort);
+      const makes = uniqueSorted(available.map((v) => v.make)).map((make) => ({ make }));
+      const bodyStyles = uniqueSorted(available.map((v) => v.bodyStyle)).map((bodyStyle) => ({ bodyStyle }));
+      return { vehicles: sorted, total: sorted.length, makes, bodyStyles };
+    }
   );
 
   return (
@@ -116,4 +130,40 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
       <Footer />
     </>
   );
+}
+
+// Snapshot fallback helpers — JS equivalents of the Prisma where/orderBy
+// clauses above. Kept here (not in @/lib) because they exist purely to
+// mirror this page's query when the DB is paused.
+function filterVehiclesForListing(vehicles: SnapshotVehicle[], params: SearchParams): SnapshotVehicle[] {
+  return vehicles.filter((v) => {
+    if (params.q) {
+      const q = params.q.toLowerCase();
+      const haystack = [v.make, v.model, v.trim, v.vin, v.stockNumber].filter(Boolean).join(' ').toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    if (params.make && v.make !== params.make) return false;
+    if (params.bodyStyle && v.bodyStyle !== params.bodyStyle) return false;
+    if (params.condition && v.condition !== params.condition) return false;
+    if (params.priceMin && v.price < Math.round(Number(params.priceMin) * 100)) return false;
+    if (params.priceMax && v.price > Math.round(Number(params.priceMax) * 100)) return false;
+    if (params.yearMin && v.year < Number(params.yearMin)) return false;
+    if (params.yearMax && v.year > Number(params.yearMax)) return false;
+    return true;
+  });
+}
+
+function sortVehiclesForListing(vehicles: SnapshotVehicle[], sort: string | undefined): SnapshotVehicle[] {
+  const copy = [...vehicles];
+  switch (sort) {
+    case 'price_asc': return copy.sort((a, b) => a.price - b.price);
+    case 'price_desc': return copy.sort((a, b) => b.price - a.price);
+    case 'mileage_asc': return copy.sort((a, b) => a.mileage - b.mileage);
+    case 'year_desc': return copy.sort((a, b) => b.year - a.year);
+    default: return copy.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+}
+
+function uniqueSorted(values: string[]): string[] {
+  return Array.from(new Set(values)).sort();
 }

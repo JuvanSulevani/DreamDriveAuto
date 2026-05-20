@@ -2,6 +2,7 @@ import 'server-only';
 import { cache } from 'react';
 import { prisma } from './prisma';
 import { retryTransient } from './public-query';
+import { readSnapshot } from './snapshot';
 import {
   DEFAULT_SITE_SETTINGS,
   SITE_SETTING_FIELDS,
@@ -28,7 +29,13 @@ export const getSiteSettings = cache(async function getSiteSettings() {
   try {
     return mergeSiteSettings(await retryTransient('site-settings', getSavedSiteSettingMap));
   } catch (error) {
-    console.error('[site-settings] falling back to defaults', error);
+    console.error('[site-settings] db failed; attempting snapshot fallback', error);
+    const snapshot = await readSnapshot();
+    if (snapshot) {
+      console.log('[site-settings] served from snapshot');
+      return snapshot.settings;
+    }
+    console.error('[site-settings] no snapshot — falling back to defaults');
     return DEFAULT_SITE_SETTINGS;
   }
 });
