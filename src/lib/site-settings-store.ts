@@ -1,7 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import { prisma } from './prisma';
-import { retryTransient } from './public-query';
+import { retryTransient, isTransientError } from './public-query';
 import { readSnapshot } from './snapshot';
 import {
   DEFAULT_SITE_SETTINGS,
@@ -21,21 +21,40 @@ export async function getSavedSiteSettingMap() {
 
 // Wrapped in React.cache() so calls from the root layout, individual pages,
 // and the sitemap all share a single DB read per server request.
-// This is the FIRST db read of every request (from the layout), so wrapping
-// it in retryTransient absorbs the Aurora Serverless v2 wake-up window
-// (15-30s) for the whole request — subsequent queries on the now-warm DB
-// won't need to wait again.
+//
+// Fast-path snapshot strategy:
+//  1. One quick attempt against the live DB.
+//  2. On transient failure (Aurora waking) → try snapshot immediately
+//     so the visitor gets real content in < 2s instead of waiting 30s.
+//  3. If no snapshot → retry with backoff (DB still gets to wake up).
+//  4. If retries exhausted → hardcoded defaults.
 export const getSiteSettings = cache(async function getSiteSettings() {
+  // Step 1 — fast path: live DB.
+  let firstError: unknown;
+  try {
+    return mergeSiteSettings(await getSavedSiteSettingMap());
+  } catch (error) {
+    firstError = error;
+  }
+
+  // Step 2 — transient error: check snapshot before waiting for retries.
+  if (isTransientError(firstError)) {
+    try {
+      const snapshot = await readSnapshot();
+      if (snapshot) {
+        console.log('[site-settings] DB waking; served from snapshot');
+        return snapshot.settings;
+      }
+    } catch (snapError) {
+      console.error('[site-settings] snapshot read failed', snapError);
+    }
+  }
+
+  // Step 3 — no snapshot: retry with backoff, then fall back to defaults.
   try {
     return mergeSiteSettings(await retryTransient('site-settings', getSavedSiteSettingMap));
   } catch (error) {
-    console.error('[site-settings] db failed; attempting snapshot fallback', error);
-    const snapshot = await readSnapshot();
-    if (snapshot) {
-      console.log('[site-settings] served from snapshot');
-      return snapshot.settings;
-    }
-    console.error('[site-settings] no snapshot — falling back to defaults');
+    console.error('[site-settings] retry exhausted; falling back to defaults', error);
     return DEFAULT_SITE_SETTINGS;
   }
 });
