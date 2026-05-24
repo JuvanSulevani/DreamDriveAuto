@@ -3,6 +3,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import VehicleCard from '@/components/VehicleCard';
 import Ticker from '@/components/Ticker';
+import HeroSearch from '@/components/HeroSearch';
 import { prisma } from '@/lib/prisma';
 import { ArrowUpRight, ArrowRight } from 'lucide-react';
 import { getSiteSettings } from '@/lib/site-settings-store';
@@ -12,7 +13,11 @@ import { readSnapshot, reviveVehicle } from '@/lib/snapshot';
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  const [settings, inventory] = await Promise.all([getSiteSettings(), getHomeInventory()]);
+  const [settings, inventory, searchOptions] = await Promise.all([
+    getSiteSettings(),
+    getHomeInventory(),
+    getSearchOptions()
+  ]);
   const { home, dealer, pages } = settings;
   const { featured, recent, totalCount } = inventory;
 
@@ -45,8 +50,9 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-b from-ink/60 via-ink/40 to-ink" />
         <div className="absolute inset-0 bg-gradient-to-r from-ink/85 via-transparent to-transparent" />
 
-        <div className="relative h-full flex flex-col justify-end px-6 lg:px-12 pb-20 lg:pb-28">
-          <div className="reveal max-w-6xl">
+        <div className="relative h-full flex flex-col justify-end">
+          {/* Hero copy */}
+          <div className="px-6 lg:px-12 pb-10 reveal max-w-6xl">
             <div className="eyebrow">{home.heroEyebrow}</div>
 
             <h1 className="display text-[15vw] md:text-[10vw] lg:text-[9rem] mt-6 leading-[0.85]">
@@ -66,15 +72,19 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <div className="mt-12 flex flex-wrap gap-4">
-              <Link href="/inventory" className="btn-primary">
-                Browse Inventory <ArrowRight size={14} />
-              </Link>
+            <div className="mt-10 flex flex-wrap gap-4">
               <Link href="/contact" className="btn-ghost">
                 Book an Appointment
               </Link>
             </div>
           </div>
+
+          {/* Search bar — anchored to bottom of hero */}
+          <HeroSearch
+            makes={searchOptions.makes}
+            modelsByMake={searchOptions.modelsByMake}
+            yearRange={searchOptions.yearRange}
+          />
         </div>
 
         {heroVehicle && !home.heroImageUrl && (
@@ -277,6 +287,70 @@ async function getHomeInventory() {
       };
     }
   );
+}
+
+async function getSearchOptions() {
+  try {
+    const vehicles = await prisma.vehicle.findMany({
+      where: { status: 'available' },
+      select: { make: true, model: true, year: true },
+      orderBy: { make: 'asc' }
+    });
+
+    const makesSet = new Set<string>();
+    const modelsByMake: Record<string, Set<string>> = {};
+    let minYear = new Date().getFullYear();
+    let maxYear = new Date().getFullYear();
+
+    for (const v of vehicles) {
+      makesSet.add(v.make);
+      if (!modelsByMake[v.make]) modelsByMake[v.make] = new Set();
+      modelsByMake[v.make].add(v.model);
+      if (v.year < minYear) minYear = v.year;
+      if (v.year > maxYear) maxYear = v.year;
+    }
+
+    return {
+      makes: Array.from(makesSet).sort(),
+      modelsByMake: Object.fromEntries(
+        Object.entries(modelsByMake).map(([make, models]) => [make, Array.from(models).sort()])
+      ),
+      yearRange: { min: Math.min(minYear, 2000), max: maxYear }
+    };
+  } catch {
+    // DB unavailable — try snapshot for search options
+    try {
+      const { readSnapshot } = await import('@/lib/snapshot');
+      const snap = await readSnapshot();
+      if (snap) {
+        const available = snap.vehicles.filter((v) => v.status === 'available');
+        const makesSet = new Set<string>();
+        const modelsByMake: Record<string, Set<string>> = {};
+        let minYear = new Date().getFullYear();
+        let maxYear = new Date().getFullYear();
+        for (const v of available) {
+          makesSet.add(v.make);
+          if (!modelsByMake[v.make]) modelsByMake[v.make] = new Set();
+          modelsByMake[v.make].add(v.model);
+          if (v.year < minYear) minYear = v.year;
+          if (v.year > maxYear) maxYear = v.year;
+        }
+        return {
+          makes: Array.from(makesSet).sort(),
+          modelsByMake: Object.fromEntries(
+            Object.entries(modelsByMake).map(([make, models]) => [make, Array.from(models).sort()])
+          ),
+          yearRange: { min: Math.min(minYear, 2000), max: maxYear }
+        };
+      }
+    } catch { /* ignore */ }
+
+    return {
+      makes: [],
+      modelsByMake: {},
+      yearRange: { min: 2000, max: new Date().getFullYear() }
+    };
+  }
 }
 
 function Pillar({ num, title, body }: { num: string; title: string; body: string }) {
