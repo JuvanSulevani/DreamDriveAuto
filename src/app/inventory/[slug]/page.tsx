@@ -20,7 +20,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const v = await safePublicQuery(
     'vehicle.metadata',
-    () => prisma.vehicle.findUnique({ where: { slug } }),
+    () => prisma.vehicle.findUnique({
+      where: { slug },
+      include: { photos: { orderBy: { position: 'asc' }, take: 1 } }
+    }),
     null,
     async () => {
       const snap = await readSnapshot();
@@ -29,9 +32,19 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     }
   );
   if (!v) return { title: 'Vehicle not found' };
+  const title = `${v.year} ${v.make} ${v.model}${v.trim ? ' ' + v.trim : ''}`;
+  const description = v.headline || `${v.year} ${v.make} ${v.model} for sale at ${DEALER.name}.`;
+  const firstPhoto = v.photos?.[0]?.url;
   return {
-    title: `${v.year} ${v.make} ${v.model}${v.trim ? ' ' + v.trim : ''}`,
-    description: v.headline || `${v.year} ${v.make} ${v.model} for sale at ${DEALER.name}.`
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      ...(firstPhoto && {
+        images: [{ url: firstPhoto, width: 1200, height: 800, alt: title }]
+      })
+    }
   };
 }
 
@@ -83,9 +96,44 @@ export default async function VehiclePage({ params }: { params: Promise<{ slug: 
   const features = (v.features || '').split(',').map((s) => s.trim()).filter(Boolean);
   const savings = v.msrp ? v.msrp - v.price : 0;
 
+  const base = DEALER.website.replace(/\/$/, '');
+  const firstPhoto = v.photos[0]?.url;
+
   return (
     <>
       <Header />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Car',
+            name: `${v.year} ${v.make} ${v.model}${v.trim ? ' ' + v.trim : ''}`,
+            brand: { '@type': 'Brand', name: v.make },
+            model: v.model,
+            modelDate: String(v.year),
+            vehicleIdentificationNumber: v.vin,
+            color: v.exteriorColor ?? undefined,
+            driveWheelConfiguration: v.drivetrain ?? undefined,
+            fuelType: v.fuelType ?? undefined,
+            mileageFromOdometer: {
+              '@type': 'QuantitativeValue',
+              value: v.mileage,
+              unitCode: 'SMI',
+            },
+            ...(firstPhoto && { image: firstPhoto }),
+            offers: {
+              '@type': 'Offer',
+              price: (v.price / 100).toFixed(2),
+              priceCurrency: 'CAD',
+              availability: 'https://schema.org/InStock',
+              url: `${base}/inventory/${v.slug}`,
+              seller: { '@type': 'AutoDealer', name: DEALER.name },
+            },
+          }),
+        }}
+      />
 
       <main className="pt-28 pb-24">
         {/* Breadcrumb */}

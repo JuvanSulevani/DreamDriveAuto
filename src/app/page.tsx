@@ -5,6 +5,7 @@ import VehicleCard from '@/components/VehicleCard';
 import Ticker from '@/components/Ticker';
 import HeroSearch from '@/components/HeroSearch';
 import { prisma } from '@/lib/prisma';
+import { DEALER } from '@/lib/dealer';
 import { ArrowUpRight, ArrowRight } from 'lucide-react';
 import { getSiteSettings } from '@/lib/site-settings-store';
 import { safePublicQuery } from '@/lib/public-query';
@@ -244,8 +245,41 @@ export default async function HomePage() {
       </section>
 
       <Footer />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildDealerSchema()) }}
+      />
     </>
   );
+}
+
+function buildDealerSchema() {
+  const base = DEALER.website.replace(/\/$/, '');
+
+  const dayMap: Record<string, string[]> = {
+    'Mon — Fri': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+    Saturday: ['Saturday'],
+    Sunday: ['Sunday'],
+  };
+  const pad = (t: string) => (t.length < 5 ? `0${t}` : t);
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'AutoDealer',
+    name: DEALER.name,
+    url: base,
+    telephone: DEALER.phone,
+    email: DEALER.email,
+    address: DEALER.address,
+    image: `${base}/opengraph-image`,
+    openingHoursSpecification: DEALER.hours.map((h) => ({
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: dayMap[h.day] ?? [h.day],
+      opens: pad(h.open),
+      closes: pad(h.close),
+    })),
+  };
 }
 
 async function getHomeInventory() {

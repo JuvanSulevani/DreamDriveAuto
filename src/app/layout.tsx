@@ -30,12 +30,12 @@ const geistFallback = {
 export const metadata: Metadata = {
   title: { default: `${DEALER.name} — Curated Performance & Luxury Automobiles`, template: `%s · ${DEALER.name}` },
   description:
-    'A boutique automotive showroom of meticulously sourced performance, luxury, and pre-owned vehicles. By appointment in Seattle.',
+    'A boutique automotive showroom of meticulously sourced performance, luxury, and pre-owned vehicles. By appointment in London, Ontario.',
   metadataBase: new URL(DEALER.website),
   openGraph: {
     type: 'website',
     title: DEALER.name,
-    description: 'Curated performance & luxury automobiles. Seattle.',
+    description: 'Curated performance & luxury automobiles. London, Ontario.',
     url: DEALER.website
   }
 };
