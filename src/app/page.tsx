@@ -4,18 +4,17 @@ import Footer from '@/components/Footer';
 import VehicleCard from '@/components/VehicleCard';
 import Ticker from '@/components/Ticker';
 import HeroSearch from '@/components/HeroSearch';
-import { prisma } from '@/lib/prisma';
 import { DEALER } from '@/lib/dealer';
 import { ArrowUpRight, ArrowRight } from 'lucide-react';
 import { getSiteSettings } from '@/lib/site-settings-store';
-import { safePublicQuery } from '@/lib/public-query';
-import { readSnapshot, reviveVehicle } from '@/lib/snapshot';
+import { getPublicVehicles } from '@/lib/public-data';
 
-// ISR: serve a CDN-cached HTML page instantly and regenerate in the
-// background every 5 minutes. This decouples the public page from Aurora's
-// paused state — visitors never wait for a cold-start wake-up. Admin writes
-// purge this cache on demand (see revalidatePublicContent).
-export const revalidate = 300;
+// Rendered per-request from the S3 snapshot (see getPublicVehicles): fast and
+// Aurora-independent, while admin edits show on the very next reload. We avoid
+// ISR here because on-demand cache invalidation (revalidatePath) does not
+// reliably purge the served page on AWS Amplify, which left the public site
+// stuck on stale, build-time data.
+export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
   const [settings, inventory, searchOptions] = await Promise.all([
@@ -287,108 +286,40 @@ function buildDealerSchema() {
 }
 
 async function getHomeInventory() {
-  return safePublicQuery(
-    'home.inventory',
-    async () => {
-      const [featured, recent, totalCount] = await Promise.all([
-        prisma.vehicle.findMany({
-          where: { status: 'available', favourite: true },
-          include: { photos: { orderBy: { position: 'asc' } } },
-          orderBy: { createdAt: 'desc' },
-          take: 4
-        }),
-        prisma.vehicle.findMany({
-          where: { status: 'available' },
-          include: { photos: { orderBy: { position: 'asc' } } },
-          orderBy: { createdAt: 'desc' },
-          take: 8
-        }),
-        prisma.vehicle.count({ where: { status: 'available' } })
-      ]);
-
-      return { featured, recent, totalCount };
-    },
-    { featured: [], recent: [], totalCount: 0 },
-    async () => {
-      // DB paused/down — serve from the S3 snapshot. The snapshot is sorted
-      // by createdAt desc and contains every non-hidden vehicle, so we just
-      // filter to 'available' and slice the same way the live query does.
-      const snap = await readSnapshot();
-      if (!snap) return null;
-      const available = snap.vehicles
-        .filter((v) => v.status === 'available')
-        .map(reviveVehicle);
-      return {
-        featured: available.filter((v) => v.favourite).slice(0, 4),
-        recent: available.slice(0, 8),
-        totalCount: available.length
-      };
-    }
-  );
+  // Snapshot is ordered createdAt desc and holds every non-hidden vehicle, so
+  // we mirror the old live queries: favourites for the featured rail, the most
+  // recent for the rest.
+  const available = (await getPublicVehicles()).filter((v) => v.status === 'available');
+  return {
+    featured: available.filter((v) => v.favourite).slice(0, 4),
+    recent: available.slice(0, 8),
+    totalCount: available.length
+  };
 }
 
 async function getSearchOptions() {
-  try {
-    const vehicles = await prisma.vehicle.findMany({
-      where: { status: 'available' },
-      select: { make: true, model: true, year: true },
-      orderBy: { make: 'asc' }
-    });
+  const available = (await getPublicVehicles()).filter((v) => v.status === 'available');
 
-    const makesSet = new Set<string>();
-    const modelsByMake: Record<string, Set<string>> = {};
-    let minYear = new Date().getFullYear();
-    let maxYear = new Date().getFullYear();
+  const makesSet = new Set<string>();
+  const modelsByMake: Record<string, Set<string>> = {};
+  let minYear = new Date().getFullYear();
+  let maxYear = new Date().getFullYear();
 
-    for (const v of vehicles) {
-      makesSet.add(v.make);
-      if (!modelsByMake[v.make]) modelsByMake[v.make] = new Set();
-      modelsByMake[v.make].add(v.model);
-      if (v.year < minYear) minYear = v.year;
-      if (v.year > maxYear) maxYear = v.year;
-    }
-
-    return {
-      makes: Array.from(makesSet).sort(),
-      modelsByMake: Object.fromEntries(
-        Object.entries(modelsByMake).map(([make, models]) => [make, Array.from(models).sort()])
-      ),
-      yearRange: { min: Math.min(minYear, 2000), max: maxYear }
-    };
-  } catch {
-    // DB unavailable — try snapshot for search options
-    try {
-      const { readSnapshot } = await import('@/lib/snapshot');
-      const snap = await readSnapshot();
-      if (snap) {
-        const available = snap.vehicles.filter((v) => v.status === 'available');
-        const makesSet = new Set<string>();
-        const modelsByMake: Record<string, Set<string>> = {};
-        let minYear = new Date().getFullYear();
-        let maxYear = new Date().getFullYear();
-        for (const v of available) {
-          makesSet.add(v.make);
-          if (!modelsByMake[v.make]) modelsByMake[v.make] = new Set();
-          modelsByMake[v.make].add(v.model);
-          if (v.year < minYear) minYear = v.year;
-          if (v.year > maxYear) maxYear = v.year;
-        }
-        return {
-          makes: Array.from(makesSet).sort(),
-          modelsByMake: Object.fromEntries(
-            Object.entries(modelsByMake).map(([make, models]) => [make, Array.from(models).sort()])
-          ),
-          yearRange: { min: Math.min(minYear, 2000), max: maxYear }
-        };
-      }
-    } catch { /* ignore */ }
-
-    return {
-      makes: [],
-      modelsByMake: {},
-      yearRange: { min: 2000, max: new Date().getFullYear() }
-    };
+  for (const v of available) {
+    makesSet.add(v.make);
+    if (!modelsByMake[v.make]) modelsByMake[v.make] = new Set();
+    modelsByMake[v.make].add(v.model);
+    if (v.year < minYear) minYear = v.year;
+    if (v.year > maxYear) maxYear = v.year;
   }
+
+  return {
+    makes: Array.from(makesSet).sort(),
+    modelsByMake: Object.fromEntries(
+      Object.entries(modelsByMake).map(([make, models]) => [make, Array.from(models).sort()])
+    ),
+    yearRange: { min: Math.min(minYear, 2000), max: maxYear }
+  };
 }
 
 function Pillar({ num, title, body }: { num: string; title: string; body: string }) {

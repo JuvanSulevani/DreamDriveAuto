@@ -1,8 +1,11 @@
 import type { MetadataRoute } from 'next';
-import { prisma } from '@/lib/prisma';
 import { DEALER } from '@/lib/dealer';
-import { hasUsableDatabaseConfig } from '@/lib/database-url';
 import { getSiteSettings } from '@/lib/site-settings-store';
+import { getPublicVehicles } from '@/lib/public-data';
+
+// Read the snapshot per-request so newly-added cars appear without a redeploy
+// (still no DB, so Aurora stays paused).
+export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = DEALER.website.replace(/\/$/, '');
@@ -39,15 +42,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 }
 
 async function getSitemapVehicles() {
-  if (!hasUsableDatabaseConfig()) return [];
-
-  try {
-    return await prisma.vehicle.findMany({
-      where: { status: 'available' },
-      select: { slug: true, updatedAt: true }
-    });
-  } catch (error) {
-    console.warn('[sitemap] Skipping vehicle URLs because the database is unavailable during sitemap generation.', error);
-    return [];
-  }
+  // Snapshot-first (same as the public pages) so generating the sitemap doesn't
+  // wake Aurora on every crawler hit.
+  const vehicles = await getPublicVehicles();
+  return vehicles
+    .filter((v) => v.status === 'available')
+    .map((v) => ({ slug: v.slug, updatedAt: v.updatedAt }));
 }

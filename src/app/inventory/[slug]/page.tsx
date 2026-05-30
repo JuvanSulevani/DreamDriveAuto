@@ -6,54 +6,21 @@ import VehicleGallery from '@/components/VehicleGallery';
 import FinanceCalculator from '@/components/FinanceCalculator';
 import LeadForm from '@/components/LeadForm';
 import VehicleCard from '@/components/VehicleCard';
-import { prisma } from '@/lib/prisma';
 import { formatPrice, formatMiles, conditionLabel } from '@/lib/format';
 import { DEALER } from '@/lib/dealer';
 import { getSiteSettings } from '@/lib/site-settings-store';
-import { safePublicQuery } from '@/lib/public-query';
-import { readSnapshot, reviveVehicle } from '@/lib/snapshot';
+import { getPublicVehicles, getPublicVehicleBySlug } from '@/lib/public-data';
 import { Phone, MapPin, ShieldCheck, FileText, ChevronLeft } from 'lucide-react';
 
-// ISR: vehicle detail pages are served from the CDN cache and regenerate every
-// 5 minutes. Admin edits/deletes purge the cache on demand (see
-// revalidatePublicContent).
-export const revalidate = 300;
-
-// Prerender every current vehicle page at build time. Without this, a dynamic
-// [slug] segment renders on-demand per request (no-store), so detail pages stay
-// coupled to Aurora's paused state — the very cold-load problem ISR is meant to
-// fix. Prerendering bakes the HTML into the deploy artifact, served instantly
-// from the CDN regardless of the DB. New slugs added after a build render
-// on-demand (dynamicParams defaults to true) and are purged in by admin writes.
-export async function generateStaticParams() {
-  try {
-    const vehicles = await prisma.vehicle.findMany({
-      where: { NOT: { status: 'hidden' } },
-      select: { slug: true }
-    });
-    return vehicles.map((v) => ({ slug: v.slug }));
-  } catch {
-    // DB unreachable at build time — fall back to on-demand rendering for all
-    // slugs rather than failing the build.
-    return [];
-  }
-}
+// Rendered per-request from the S3 snapshot (getPublicVehicleBySlug): fast,
+// Aurora-independent, and reflects admin edits/deletes on the next reload.
+// ISR + generateStaticParams were removed because Amplify doesn't reliably
+// honour on-demand cache invalidation, so edited cars showed stale data.
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const v = await safePublicQuery(
-    'vehicle.metadata',
-    () => prisma.vehicle.findUnique({
-      where: { slug },
-      include: { photos: { orderBy: { position: 'asc' }, take: 1 } }
-    }),
-    null,
-    async () => {
-      const snap = await readSnapshot();
-      const match = snap?.vehicles.find((x) => x.slug === slug);
-      return match ? reviveVehicle(match) : null;
-    }
-  );
+  const v = await getPublicVehicleBySlug(slug);
   if (!v) return { title: 'Vehicle not found' };
   const title = `${v.year} ${v.make} ${v.model}${v.trim ? ' ' + v.trim : ''}`;
   const description = v.headline || `${v.year} ${v.make} ${v.model} for sale at ${DEALER.name}.`;
@@ -74,47 +41,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function VehiclePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const { dealer } = await getSiteSettings();
-  const v = await safePublicQuery(
-    'vehicle.detail',
-    () => prisma.vehicle.findUnique({
-      where: { slug },
-      include: { photos: { orderBy: { position: 'asc' } } }
-    }),
-    null,
-    async () => {
-      // DB paused — pull the vehicle (with its photos) from the snapshot.
-      const snap = await readSnapshot();
-      const match = snap?.vehicles.find((x) => x.slug === slug);
-      return match ? reviveVehicle(match) : null;
-    }
-  );
+  const v = await getPublicVehicleBySlug(slug);
 
   if (!v || v.status === 'hidden') notFound();
 
-  const similar = await safePublicQuery(
-    'vehicle.similar',
-    () => prisma.vehicle.findMany({
-      where: {
-        status: 'available',
-        bodyStyle: v.bodyStyle,
-        NOT: { id: v.id }
-      },
-      include: { photos: { orderBy: { position: 'asc' } } },
-      orderBy: { createdAt: 'desc' },
-      take: 4
-    }),
-    [],
-    async () => {
-      // If the detail call fell back to the snapshot, this almost certainly
-      // will too — keep the "Adjacent" rail populated instead of empty.
-      const snap = await readSnapshot();
-      if (!snap) return null;
-      return snap.vehicles
-        .filter((x) => x.status === 'available' && x.bodyStyle === v.bodyStyle && x.id !== v.id)
-        .slice(0, 4)
-        .map(reviveVehicle);
-    }
-  );
+  // Shares the same React-cached snapshot read as the lookup above.
+  const similar = (await getPublicVehicles())
+    .filter((x) => x.status === 'available' && x.bodyStyle === v.bodyStyle && x.id !== v.id)
+    .slice(0, 4);
 
   const features = (v.features || '').split(',').map((s) => s.trim()).filter(Boolean);
   const savings = v.msrp ? v.msrp - v.price : 0;

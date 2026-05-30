@@ -2,38 +2,20 @@ import { Suspense } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import InventoryBrowser, { type ListingVehicle } from '@/components/InventoryBrowser';
-import { prisma } from '@/lib/prisma';
-import { safePublicQuery } from '@/lib/public-query';
-import { readSnapshot, reviveVehicle, type SnapshotVehicle } from '@/lib/snapshot';
+import { getPublicVehicles } from '@/lib/public-data';
+import type { SnapshotVehicle } from '@/lib/snapshot';
 
-// Prerendered (ISR). The page no longer reads searchParams, so it can be
-// statically generated at build time and revalidated every 5 min in the
-// background. Filtering/sorting moved client-side (see InventoryBrowser),
-// which makes /inventory Aurora-independent for visitors.
-export const revalidate = 300;
+// Rendered per-request from the S3 snapshot (getPublicVehicles): the read is
+// fast and needs no database, so the page stays quick and keeps Aurora paused,
+// while admin edits show on the very next reload. ISR was dropped here because
+// Amplify doesn't reliably honour on-demand cache invalidation (revalidatePath),
+// which left the list stuck on stale, build-time data.
+export const dynamic = 'force-dynamic';
 
 export default async function InventoryPage() {
-  const vehicles = await safePublicQuery(
-    'inventory.list',
-    async () => {
-      const rows = await prisma.vehicle.findMany({
-        where: { status: 'available' },
-        include: { photos: { orderBy: { position: 'asc' } } },
-        orderBy: { createdAt: 'desc' }
-      });
-      return rows.map(toListingVehicle);
-    },
-    [],
-    async () => {
-      // DB paused during a background revalidation — fall back to the snapshot.
-      const snap = await readSnapshot();
-      if (!snap) return null;
-      return snap.vehicles
-        .filter((v) => v.status === 'available')
-        .map(reviveVehicle)
-        .map(toListingVehicle);
-    }
-  );
+  const vehicles = (await getPublicVehicles())
+    .filter((v) => v.status === 'available')
+    .map(toListingVehicle);
 
   const makes = uniqueSorted(vehicles.map((v) => v.make));
   const bodyStyles = uniqueSorted(vehicles.map((v) => v.bodyStyle));
@@ -65,24 +47,6 @@ export default async function InventoryPage() {
   );
 }
 
-// Rendered into the static HTML while the client-filtered grid hydrates.
-// useSearchParams (in InventoryBrowser/InventoryFilters) forces that subtree
-// to client-render, so a Suspense boundary is required for the ISR build.
-function InventorySkeleton() {
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-      <div className="lg:col-span-3" />
-      <div className="lg:col-span-9">
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-12">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="aspect-[4/3] bg-ink-700 animate-pulse" />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function toListingVehicle(v: SnapshotVehicle): ListingVehicle {
   return {
     id: v.id,
@@ -104,6 +68,23 @@ function toListingVehicle(v: SnapshotVehicle): ListingVehicle {
     createdAt: v.createdAt.getTime(),
     photos: v.photos.map((p) => ({ url: p.url, alt: p.alt }))
   };
+}
+
+// Shown only if the client-filtered grid suspends (useSearchParams). With
+// dynamic rendering the grid is normally server-rendered into the HTML.
+function InventorySkeleton() {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+      <div className="lg:col-span-3" />
+      <div className="lg:col-span-9">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-12">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="aspect-[4/3] bg-ink-700 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function uniqueSorted(values: string[]): string[] {

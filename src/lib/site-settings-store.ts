@@ -1,7 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import { prisma } from './prisma';
-import { retryTransient, isTransientError } from './public-query';
+import { retryTransient } from './public-query';
 import { readSnapshot } from './snapshot';
 import {
   DEFAULT_SITE_SETTINGS,
@@ -20,37 +20,22 @@ export async function getSavedSiteSettingMap() {
 }
 
 // Wrapped in React.cache() so calls from the root layout, individual pages,
-// and the sitemap all share a single DB read per server request.
+// and the sitemap all share a single read per server request.
 //
-// Fast-path snapshot strategy:
-//  1. One quick attempt against the live DB.
-//  2. On transient failure (Aurora waking) → try snapshot immediately
-//     so the visitor gets real content in < 2s instead of waiting 30s.
-//  3. If no snapshot → retry with backoff (DB still gets to wake up).
-//  4. If retries exhausted → hardcoded defaults.
+// Snapshot-first: the S3 snapshot holds current settings and is rewritten on
+// every admin save, so reading it keeps every (now dynamic) public page fast
+// and Aurora-independent — the DB stays paused, no keep-warm cost. The DB is
+// only touched if no snapshot exists yet (brand-new environment).
 export const getSiteSettings = cache(async function getSiteSettings() {
-  // Step 1 — fast path: live DB.
-  let firstError: unknown;
+  // Step 1 — snapshot (current, no DB, keeps Aurora asleep).
   try {
-    return mergeSiteSettings(await getSavedSiteSettingMap());
-  } catch (error) {
-    firstError = error;
+    const snapshot = await readSnapshot();
+    if (snapshot) return snapshot.settings;
+  } catch (snapError) {
+    console.error('[site-settings] snapshot read failed', snapError);
   }
 
-  // Step 2 — transient error: check snapshot before waiting for retries.
-  if (isTransientError(firstError)) {
-    try {
-      const snapshot = await readSnapshot();
-      if (snapshot) {
-        console.log('[site-settings] DB waking; served from snapshot');
-        return snapshot.settings;
-      }
-    } catch (snapError) {
-      console.error('[site-settings] snapshot read failed', snapError);
-    }
-  }
-
-  // Step 3 — no snapshot: retry with backoff, then fall back to defaults.
+  // Step 2 — no snapshot: read the DB with retry, then hardcoded defaults.
   try {
     return mergeSiteSettings(await retryTransient('site-settings', getSavedSiteSettingMap));
   } catch (error) {
