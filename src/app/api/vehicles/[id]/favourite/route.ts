@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 import { writeSnapshot } from '@/lib/snapshot';
+import { revalidatePublicContent } from '@/lib/revalidate';
 
 export const runtime = 'nodejs';
 
@@ -21,6 +22,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     select: { id: true, favourite: true }
   });
   await writeSnapshot();
+  revalidatePublicContent();
 
   return NextResponse.json({ vehicle });
 }

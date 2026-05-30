@@ -5,7 +5,9 @@ import Footer from '@/components/Footer';
 import { getSiteSettings } from '@/lib/site-settings-store';
 
 export const metadata = { title: 'About' };
-export const dynamic = 'force-dynamic';
+// ISR: static content driven by site settings; cached at the CDN and
+// regenerated hourly. Settings saves purge this on demand.
+export const revalidate = 3600;
 
 export default async function AboutPage() {
   const { about, pages } = await getSiteSettings();

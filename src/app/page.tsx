@@ -11,7 +11,11 @@ import { getSiteSettings } from '@/lib/site-settings-store';
 import { safePublicQuery } from '@/lib/public-query';
 import { readSnapshot, reviveVehicle } from '@/lib/snapshot';
 
-export const dynamic = 'force-dynamic';
+// ISR: serve a CDN-cached HTML page instantly and regenerate in the
+// background every 5 minutes. This decouples the public page from Aurora's
+// paused state — visitors never wait for a cold-start wake-up. Admin writes
+// purge this cache on demand (see revalidatePublicContent).
+export const revalidate = 300;
 
 export default async function HomePage() {
   const [settings, inventory, searchOptions] = await Promise.all([

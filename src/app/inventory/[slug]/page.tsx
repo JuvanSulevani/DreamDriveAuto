@@ -14,7 +14,10 @@ import { safePublicQuery } from '@/lib/public-query';
 import { readSnapshot, reviveVehicle } from '@/lib/snapshot';
 import { Phone, MapPin, ShieldCheck, FileText, ChevronLeft } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+// ISR: vehicle detail pages are generated on first request and served from
+// the CDN cache thereafter, regenerating every 5 minutes. Admin edits/deletes
+// purge the cache on demand (see revalidatePublicContent).
+export const revalidate = 300;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

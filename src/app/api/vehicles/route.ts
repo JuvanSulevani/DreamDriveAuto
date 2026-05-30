@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth';
 import { slugify } from '@/lib/format';
 import { parseVehicleInput } from '@/lib/vehicle-validation';
 import { writeSnapshot } from '@/lib/snapshot';
+import { revalidatePublicContent } from '@/lib/revalidate';
 
 export const runtime = 'nodejs';
 
@@ -84,6 +85,7 @@ export async function POST(req: NextRequest) {
       include: { photos: true }
     });
     await writeSnapshot();
+    revalidatePublicContent();
     return NextResponse.json({ vehicle });
   } catch (e) {
     if (e instanceof z.ZodError) {

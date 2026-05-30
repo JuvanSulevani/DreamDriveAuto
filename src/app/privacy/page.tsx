@@ -3,9 +3,9 @@ import Footer from '@/components/Footer';
 import { getSiteSettings } from '@/lib/site-settings-store';
 
 export const metadata = { title: 'Privacy Policy' };
-// Dynamic so the header nav always reflects current page-visibility settings
-// and the body picks up edits the customer makes in the admin panel.
-export const dynamic = 'force-dynamic';
+// ISR: static content driven by site settings; cached at the CDN and
+// regenerated hourly. Settings saves purge this on demand.
+export const revalidate = 3600;
 
 export default async function PrivacyPage() {
   const { legal } = await getSiteSettings();

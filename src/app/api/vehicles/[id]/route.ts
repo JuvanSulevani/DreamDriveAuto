@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/auth';
 import { parseVehicleInput } from '@/lib/vehicle-validation';
 import { writeSnapshot } from '@/lib/snapshot';
+import { revalidatePublicContent } from '@/lib/revalidate';
 
 export const runtime = 'nodejs';
 
@@ -53,6 +54,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       include: { photos: { orderBy: { position: 'asc' } } }
     });
     await writeSnapshot();
+    revalidatePublicContent();
     return NextResponse.json({ vehicle });
   } catch (e) {
     if (e instanceof z.ZodError) {
@@ -69,5 +71,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params;
   await prisma.vehicle.delete({ where: { id } });
   await writeSnapshot();
+  revalidatePublicContent();
   return NextResponse.json({ ok: true });
 }

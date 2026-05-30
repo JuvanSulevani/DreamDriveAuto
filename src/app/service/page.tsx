@@ -6,7 +6,9 @@ import { ArrowRight } from 'lucide-react';
 import { getSiteSettings } from '@/lib/site-settings-store';
 
 export const metadata = { title: 'Service' };
-export const dynamic = 'force-dynamic';
+// ISR: static content driven by site settings; cached at the CDN and
+// regenerated hourly. Settings saves purge this on demand.
+export const revalidate = 3600;
 
 export default async function ServicePage() {
   const { pages } = await getSiteSettings();
