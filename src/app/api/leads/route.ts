@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { notifyLead } from '@/lib/email';
 import { DEALER } from '@/lib/dealer';
+import { retryTransient } from '@/lib/public-query';
 
 export const runtime = 'nodejs';
 
@@ -23,21 +24,26 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const data = LeadSchema.parse(body);
 
-    const lead = await prisma.lead.create({
-      data: {
-        type: data.type,
-        vehicleId: data.vehicleId,
-        source: data.source,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        phone: data.phone,
-        message: data.message,
-        payload: data.payload ? JSON.stringify(data.payload) : null,
-        ipAddress: req.headers.get('x-forwarded-for')?.split(',')[0] ?? null,
-        userAgent: req.headers.get('user-agent') ?? null
-      }
-    });
+    // Leads are the one public write path, so they must survive an Aurora
+    // Serverless wake-up. Retry transient connection errors with backoff
+    // (~30s total) rather than dropping a customer's enquiry.
+    const lead = await retryTransient('leads.create', () =>
+      prisma.lead.create({
+        data: {
+          type: data.type,
+          vehicleId: data.vehicleId,
+          source: data.source,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          phone: data.phone,
+          message: data.message,
+          payload: data.payload ? JSON.stringify(data.payload) : null,
+          ipAddress: req.headers.get('x-forwarded-for')?.split(',')[0] ?? null,
+          userAgent: req.headers.get('user-agent') ?? null
+        }
+      })
+    );
 
     // Fire-and-forget notification
     const subject = `[${DEALER.name}] New ${data.type.replace('_', ' ')} lead — ${data.firstName} ${data.lastName}`;
