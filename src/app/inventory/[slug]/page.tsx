@@ -14,10 +14,30 @@ import { safePublicQuery } from '@/lib/public-query';
 import { readSnapshot, reviveVehicle } from '@/lib/snapshot';
 import { Phone, MapPin, ShieldCheck, FileText, ChevronLeft } from 'lucide-react';
 
-// ISR: vehicle detail pages are generated on first request and served from
-// the CDN cache thereafter, regenerating every 5 minutes. Admin edits/deletes
-// purge the cache on demand (see revalidatePublicContent).
+// ISR: vehicle detail pages are served from the CDN cache and regenerate every
+// 5 minutes. Admin edits/deletes purge the cache on demand (see
+// revalidatePublicContent).
 export const revalidate = 300;
+
+// Prerender every current vehicle page at build time. Without this, a dynamic
+// [slug] segment renders on-demand per request (no-store), so detail pages stay
+// coupled to Aurora's paused state — the very cold-load problem ISR is meant to
+// fix. Prerendering bakes the HTML into the deploy artifact, served instantly
+// from the CDN regardless of the DB. New slugs added after a build render
+// on-demand (dynamicParams defaults to true) and are purged in by admin writes.
+export async function generateStaticParams() {
+  try {
+    const vehicles = await prisma.vehicle.findMany({
+      where: { NOT: { status: 'hidden' } },
+      select: { slug: true }
+    });
+    return vehicles.map((v) => ({ slug: v.slug }));
+  } catch {
+    // DB unreachable at build time — fall back to on-demand rendering for all
+    // slugs rather than failing the build.
+    return [];
+  }
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
