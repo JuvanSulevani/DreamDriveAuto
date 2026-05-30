@@ -7,6 +7,7 @@ import { slugify } from '@/lib/format';
 import { parseVehicleInput } from '@/lib/vehicle-validation';
 import { writeSnapshot } from '@/lib/snapshot';
 import { revalidatePublicContent } from '@/lib/revalidate';
+import { retryTransient } from '@/lib/public-query';
 
 export const runtime = 'nodejs';
 
@@ -21,12 +22,12 @@ export async function GET(req: NextRequest) {
   const status = url.searchParams.get('status') ?? 'available';
   const limit = Math.min(Number(url.searchParams.get('limit') ?? 50), 200);
 
-  const vehicles = await prisma.vehicle.findMany({
+  const vehicles = await retryTransient('vehicles.list', () => prisma.vehicle.findMany({
     where: status === 'all' ? {} : { status },
     include: { photos: { orderBy: { position: 'asc' } } },
     orderBy: { createdAt: 'desc' },
     take: limit
-  });
+  }));
   return NextResponse.json({ vehicles });
 }
 
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
     const data = parseVehicleInput(body);
     const slug = slugify(`${data.year}-${data.make}-${data.model}-${data.trim ?? ''}-${data.stockNumber}`);
 
-    const vehicle = await prisma.vehicle.create({
+    const vehicle = await retryTransient('vehicles.create', () => prisma.vehicle.create({
       data: {
         slug,
         vin: data.vin,
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
         }
       },
       include: { photos: true }
-    });
+    }));
     await writeSnapshot();
     revalidatePublicContent();
     return NextResponse.json({ vehicle });

@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+// Postgres INT4 columns (price, msrp, mileage, etc.) top out at 2,147,483,647.
+// Without an explicit upper bound an oversized entry passes Zod and then blows
+// up at insert time with an opaque "server" error, so we cap every integer
+// field here and return a clear, field-specific message instead.
+const INT4_MAX = 2_147_483_647;
+
 const optionalText = z.preprocess(
   emptyStringToNull,
   z.string().trim().optional().nullable()
@@ -24,15 +30,15 @@ export const VehicleSchema = z.object({
   transmission: optionalText,
   drivetrain: optionalText,
   fuelType: optionalText,
-  cityMpg: z.number().optional().nullable(),
-  highwayMpg: z.number().optional().nullable(),
+  cityMpg: z.number().int().min(0).max(INT4_MAX).optional().nullable(),
+  highwayMpg: z.number().int().min(0).max(INT4_MAX).optional().nullable(),
   exteriorColor: optionalText,
   interiorColor: optionalText,
-  doors: z.number().int().optional().nullable(),
-  seats: z.number().int().optional().nullable(),
-  mileage: z.number().int().min(0),
-  price: z.number().int().min(0),
-  msrp: z.number().int().min(0).optional().nullable(),
+  doors: z.number().int().min(0).max(INT4_MAX).optional().nullable(),
+  seats: z.number().int().min(0).max(INT4_MAX).optional().nullable(),
+  mileage: z.number().int().min(0).max(INT4_MAX, 'Mileage is too large'),
+  price: z.number().int().min(0).max(INT4_MAX, 'Price is too large (max ~$21,474,836)'),
+  msrp: z.number().int().min(0).max(INT4_MAX, 'MSRP is too large (max ~$21,474,836)').optional().nullable(),
   status: z.enum(['available', 'pending', 'sold', 'hidden']).default('available'),
   headline: optionalText,
   description: optionalText,

@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth';
 import { parseVehicleInput } from '@/lib/vehicle-validation';
 import { writeSnapshot } from '@/lib/snapshot';
 import { revalidatePublicContent } from '@/lib/revalidate';
+import { retryTransient } from '@/lib/public-query';
 
 export const runtime = 'nodejs';
 
@@ -16,10 +17,10 @@ async function requireAdmin() {
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const vehicle = await prisma.vehicle.findUnique({
+  const vehicle = await retryTransient('vehicles.get', () => prisma.vehicle.findUnique({
     where: { id },
     include: { photos: { orderBy: { position: 'asc' } } }
-  });
+  }));
   if (!vehicle) return NextResponse.json({ error: 'not_found' }, { status: 404 });
   return NextResponse.json({ vehicle });
 }
@@ -37,7 +38,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     if (data.status === 'sold') update.soldAt = new Date();
 
-    const vehicle = await prisma.vehicle.update({
+    const vehicle = await retryTransient('vehicles.update', () => prisma.vehicle.update({
       where: { id },
       data: {
         ...update,
@@ -52,7 +53,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         }
       },
       include: { photos: { orderBy: { position: 'asc' } } }
-    });
+    }));
     await writeSnapshot();
     revalidatePublicContent();
     return NextResponse.json({ vehicle });
@@ -69,8 +70,13 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const session = await requireAdmin();
   if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const { id } = await params;
-  await prisma.vehicle.delete({ where: { id } });
-  await writeSnapshot();
-  revalidatePublicContent();
-  return NextResponse.json({ ok: true });
+  try {
+    await retryTransient('vehicles.delete', () => prisma.vehicle.delete({ where: { id } }));
+    await writeSnapshot();
+    revalidatePublicContent();
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error('[vehicles.delete]', e);
+    return NextResponse.json({ error: 'server' }, { status: 500 });
+  }
 }
